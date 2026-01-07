@@ -98,6 +98,9 @@
     </div>
   </div>
 
+  <!-- ★ ここを script より上に移動（これがポイント） -->
+  <div id="reloadBtn">⟳</div>
+
   <script>
     // ===== 基本設定 =====
     const MAX = 6;                // 0..6 ループ
@@ -126,9 +129,13 @@
     function inc(v){
       return (v >= MAX) ? 0 : (v + 1);
     }
-    document.getElementById('reloadBtn').addEventListener('click', () => {
+
+    // ★ リロード
+    const reloadBtn = document.getElementById('reloadBtn');
+    reloadBtn.addEventListener('click', () => {
       location.reload();
     });
+
     // ===== ① 長押しで 0 に戻す（短押しは +1） =====
     function bindScoreButton(btn, get, set, key){
       let timer = null;
@@ -192,6 +199,5 @@
     render();
     requestWakeLock();
   </script>
-  <div id="reloadBtn">⟳</div>
 </body>
 </html>
