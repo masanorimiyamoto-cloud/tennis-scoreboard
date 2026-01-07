@@ -11,7 +11,7 @@
       background: #0b1020;
       color: #fff;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
-      touch-action: manipulation; /* 余計なズーム等を抑制 */
+      touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
     }
@@ -29,6 +29,10 @@
       box-sizing: border-box;
     }
     button.score{
+      position: relative;
+      display: grid;
+      place-items: center;
+
       height: min(70vh, 520px);
       border: 0;
       border-radius: 24px;
@@ -45,13 +49,31 @@
       transform: scale(0.99);
       filter: brightness(1.08);
     }
+    /* 左右識別（先/後） */
+    button.score .tag{
+      position: absolute;
+      top: 14px;
+      font-size: 18px;
+      font-weight: 800;
+      opacity: .8;
+      line-height: 1;
+    }
+    button.score .tag.left{ left: 16px; }
+    button.score .tag.right{ right: 16px; }
+    button.score .num{ font-size: inherit; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="row">
-      <button class="score" id="a" aria-label="A score">0</button>
-      <button class="score" id="b" aria-label="B score">0</button>
+      <button class="score" id="a" aria-label="先攻">
+        <span class="tag left">先</span>
+        <span class="num">0</span>
+      </button>
+      <button class="score" id="b" aria-label="後攻">
+        <span class="tag right">後</span>
+        <span class="num">0</span>
+      </button>
     </div>
   </div>
 
@@ -65,7 +87,10 @@
       b: document.getElementById('b')
     };
 
-    // スコア保持（任意：リロードしても保持）
+    const numA = els.a.querySelector('.num');
+    const numB = els.b.querySelector('.num');
+
+    // スコア保持（リロードしても保持）
     const load = (k) => Number(localStorage.getItem(k) ?? 0);
     const save = (k, v) => localStorage.setItem(k, String(v));
 
@@ -73,8 +98,8 @@
     let scoreB = load('scoreB');
 
     function render(){
-      els.a.textContent = scoreA;
-      els.b.textContent = scoreB;
+      numA.textContent = scoreA;
+      numB.textContent = scoreB;
     }
 
     function inc(v){
@@ -89,7 +114,6 @@
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
       btn.addEventListener('pointerdown', (e) => {
-        // iOS等での余計な挙動を抑えたいので一応
         e.preventDefault?.();
 
         longPressed = false;
@@ -99,7 +123,6 @@
           set(0);
           save(key, 0);
           render();
-          // 触感（対応端末のみ）
           navigator.vibrate?.(20);
         }, LONG_PRESS_MS);
       });
@@ -128,20 +151,16 @@
       try{
         if(!('wakeLock' in navigator)) return; // 非対応なら何もしない
         wakeLock = await navigator.wakeLock.request('screen');
-        // 解除された時（端末側の都合など）に備える
         wakeLock.addEventListener('release', () => { wakeLock = null; });
       }catch(e){
-        // 失敗してもアプリは動かす（権限/対応状況など）
-        wakeLock = null;
+        wakeLock = null; // 失敗しても動作は継続
       }
     }
 
-    // 画面が見えている間だけON（省電力）
     document.addEventListener('visibilitychange', () => {
       if(document.visibilityState === 'visible'){
         requestWakeLock();
       }else{
-        // 多くの場合、非表示になると自動解除されるので明示処理は不要
         wakeLock = null;
       }
     });
@@ -149,8 +168,6 @@
     // 初回
     render();
     requestWakeLock();
-
-    // iOS Safari は wakeLock 非対応のことが多いです（その場合は通常通りスリープします）
   </script>
 </body>
 </html>
