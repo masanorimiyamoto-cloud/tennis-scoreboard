@@ -5,82 +5,108 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>Tennis Score (0-6)</title>
   <style>
+    :root{
+      --bg1:#070b16;
+      --bg2:#0b1020;
+      --card1:#101933;
+      --card2:#0f1730;
+      --stroke: rgba(0,0,0,.55);
+    }
+
     html, body {
       height: 100%;
       margin: 0;
-      background: #0b1020;
+      background: radial-gradient(1200px 800px at 50% 10%, rgba(90,120,255,.20), transparent 55%),
+                  linear-gradient(180deg, var(--bg1), var(--bg2));
       color: #fff;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
     }
+
     .wrap{
       height: 100%;
       display: grid;
       place-items: center;
+      padding: 12px;
+      box-sizing: border-box;
     }
+
     .row{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      padding: 16px;
-      width: min(900px, 100%);
+      gap: 14px;
+      width: min(980px, 100%);
+      height: min(86vh, 620px); /* ★ 画面をより使う */
       box-sizing: border-box;
     }
+
     button.score{
       position: relative;
       display: grid;
       place-items: center;
 
-      height: min(70vh, 520px);
-      border: 0;
-      border-radius: 24px;
-      background: #121a33;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      height: 100%;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+                  radial-gradient(900px 450px at 50% 0%, rgba(90,120,255,.15), transparent 60%),
+                  linear-gradient(180deg, var(--card1), var(--card2));
+      box-shadow: 0 18px 40px rgba(0,0,0,.40);
       color: #fff;
-      font-size: clamp(120px, 18vw, 260px);
-      font-weight: 800;
-      letter-spacing: .02em;
+
+      /* ★ 数字を最大限大きく */
+      font-size: clamp(180px, 26vw, 420px);
+      font-weight: 900;
+      letter-spacing: .01em;
+
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      padding: 0; /* ★ 余白ゼロで数字面積UP */
+      overflow: hidden;
     }
+
     button.score:active{
       transform: scale(0.99);
-      filter: brightness(1.08);
+      filter: brightness(1.10);
     }
+
     /* 左右識別（先/後） */
     button.score .tag{
       position: absolute;
       top: 14px;
-      font-size: 18px;
-      font-weight: 800;
-      opacity: .8;
+      font-size: 16px;
+      font-weight: 900;
+      opacity: .85;
       line-height: 1;
-    }
-    button.score .tag.left{ left: 16px; }
-    button.score .tag.right{ right: 16px; }
-    button.score .num{ font-size: inherit; }
-    #reloadBtn {
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      width: 48px;
-      height: 48px;
-      background: rgba(255,255,255,0.15);
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(6px);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      cursor: pointer;
-      z-index: 9999;
-      user-select: none;
     }
-    #reloadBtn:active {
-      transform: scale(0.92);
-      background: rgba(255,255,255,0.25);
+    button.score .tag.left{ left: 14px; }
+    button.score .tag.right{ right: 14px; }
+
+    /* ★ 数字の視認性強化（縁取り＋影） */
+    button.score .num{
+      font-size: inherit;
+      line-height: 1;
+      transform: translateY(2px); /* 見た目の中央寄せ微調整 */
+      text-shadow:
+        0 6px 18px rgba(0,0,0,.55),
+        0 2px 0 rgba(0,0,0,.35);
+      -webkit-text-stroke: 6px var(--stroke);
+      paint-order: stroke fill;
+    }
+
+    /* 画面が縦長のとき：2列は維持しつつ高さ確保 */
+    @media (max-width: 520px){
+      .row{ height: 88vh; gap: 12px; }
+      button.score{ font-size: clamp(170px, 34vw, 380px); border-radius: 26px; }
+      button.score .tag{ font-size: 15px; }
+      button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
     }
   </style>
 </head>
@@ -98,23 +124,17 @@
     </div>
   </div>
 
-  <!-- ★ ここを script より上に移動（これがポイント） -->
-  <div id="reloadBtn">⟳</div>
-
   <script>
-    // ===== 基本設定 =====
-    const MAX = 6;                // 0..6 ループ
-    const LONG_PRESS_MS = 600;    // 長押し判定（ms）
+    const MAX = 6;
+    const LONG_PRESS_MS = 600;
 
     const els = {
       a: document.getElementById('a'),
       b: document.getElementById('b')
     };
-
     const numA = els.a.querySelector('.num');
     const numB = els.b.querySelector('.num');
 
-    // スコア保持（リロードしても保持）
     const load = (k) => Number(localStorage.getItem(k) ?? 0);
     const save = (k, v) => localStorage.setItem(k, String(v));
 
@@ -125,18 +145,8 @@
       numA.textContent = scoreA;
       numB.textContent = scoreB;
     }
+    function inc(v){ return (v >= MAX) ? 0 : (v + 1); }
 
-    function inc(v){
-      return (v >= MAX) ? 0 : (v + 1);
-    }
-
-    // ★ リロード
-    const reloadBtn = document.getElementById('reloadBtn');
-    reloadBtn.addEventListener('click', () => {
-      location.reload();
-    });
-
-    // ===== ① 長押しで 0 に戻す（短押しは +1） =====
     function bindScoreButton(btn, get, set, key){
       let timer = null;
       let longPressed = false;
@@ -145,7 +155,6 @@
 
       btn.addEventListener('pointerdown', (e) => {
         e.preventDefault?.();
-
         longPressed = false;
         clear();
         timer = setTimeout(() => {
@@ -174,28 +183,22 @@
     bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
     bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
 
-    // ===== ④ スリープ防止（Wake Lock：対応ブラウザのみ） =====
+    // Wake Lock
     let wakeLock = null;
-
     async function requestWakeLock(){
       try{
-        if(!('wakeLock' in navigator)) return; // 非対応なら何もしない
+        if(!('wakeLock' in navigator)) return;
         wakeLock = await navigator.wakeLock.request('screen');
         wakeLock.addEventListener('release', () => { wakeLock = null; });
       }catch(e){
-        wakeLock = null; // 失敗しても動作は継続
-      }
-    }
-
-    document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState === 'visible'){
-        requestWakeLock();
-      }else{
         wakeLock = null;
       }
+    }
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible') requestWakeLock();
+      else wakeLock = null;
     });
 
-    // 初回
     render();
     requestWakeLock();
   </script>
