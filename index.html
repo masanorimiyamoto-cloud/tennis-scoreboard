@@ -61,6 +61,27 @@
     button.score .tag.left{ left: 16px; }
     button.score .tag.right{ right: 16px; }
     button.score .num{ font-size: inherit; }
+    #reloadBtn {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      cursor: pointer;
+      z-index: 9999;
+      user-select: none;
+    }
+    #reloadBtn:active {
+      transform: scale(0.92);
+      background: rgba(255,255,255,0.25);
+    }
   </style>
 </head>
 <body>
@@ -105,7 +126,9 @@
     function inc(v){
       return (v >= MAX) ? 0 : (v + 1);
     }
-
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+      location.reload();
+    });
     // ===== ① 長押しで 0 に戻す（短押しは +1） =====
     function bindScoreButton(btn, get, set, key){
       let timer = null;
@@ -169,5 +192,6 @@
     render();
     requestWakeLock();
   </script>
+  <div id="reloadBtn">⟳</div>
 </body>
 </html>
