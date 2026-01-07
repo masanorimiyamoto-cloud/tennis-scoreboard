@@ -12,6 +12,8 @@
       color: #fff;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
       touch-action: manipulation; /* 余計なズーム等を抑制 */
+      -webkit-user-select: none;
+      user-select: none;
     }
     .wrap{
       height: 100%;
@@ -37,6 +39,7 @@
       font-weight: 800;
       letter-spacing: .02em;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
     button.score:active{
       transform: scale(0.99);
@@ -53,13 +56,16 @@
   </div>
 
   <script>
-    const MAX = 6; // 0..6
+    // ===== 基本設定 =====
+    const MAX = 6;                // 0..6 ループ
+    const LONG_PRESS_MS = 600;    // 長押し判定（ms）
+
     const els = {
       a: document.getElementById('a'),
       b: document.getElementById('b')
     };
 
-    // （任意）リロードしても保持したいなら localStorage を使う
+    // スコア保持（任意：リロードしても保持）
     const load = (k) => Number(localStorage.getItem(k) ?? 0);
     const save = (k, v) => localStorage.setItem(k, String(v));
 
@@ -73,22 +79,78 @@
 
     function inc(v){
       return (v >= MAX) ? 0 : (v + 1);
-      // あるいは: return (v + 1) % (MAX + 1);
     }
 
-    els.a.addEventListener('click', () => {
-      scoreA = inc(scoreA);
-      save('scoreA', scoreA);
-      render();
+    // ===== ① 長押しで 0 に戻す（短押しは +1） =====
+    function bindScoreButton(btn, get, set, key){
+      let timer = null;
+      let longPressed = false;
+
+      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
+
+      btn.addEventListener('pointerdown', (e) => {
+        // iOS等での余計な挙動を抑えたいので一応
+        e.preventDefault?.();
+
+        longPressed = false;
+        clear();
+        timer = setTimeout(() => {
+          longPressed = true;
+          set(0);
+          save(key, 0);
+          render();
+          // 触感（対応端末のみ）
+          navigator.vibrate?.(20);
+        }, LONG_PRESS_MS);
+      });
+
+      btn.addEventListener('pointerup', () => {
+        clear();
+        if(!longPressed){
+          const v = inc(get());
+          set(v);
+          save(key, v);
+          render();
+        }
+      });
+
+      btn.addEventListener('pointercancel', clear);
+      btn.addEventListener('pointerleave', clear);
+    }
+
+    bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
+    bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
+
+    // ===== ④ スリープ防止（Wake Lock：対応ブラウザのみ） =====
+    let wakeLock = null;
+
+    async function requestWakeLock(){
+      try{
+        if(!('wakeLock' in navigator)) return; // 非対応なら何もしない
+        wakeLock = await navigator.wakeLock.request('screen');
+        // 解除された時（端末側の都合など）に備える
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }catch(e){
+        // 失敗してもアプリは動かす（権限/対応状況など）
+        wakeLock = null;
+      }
+    }
+
+    // 画面が見えている間だけON（省電力）
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible'){
+        requestWakeLock();
+      }else{
+        // 多くの場合、非表示になると自動解除されるので明示処理は不要
+        wakeLock = null;
+      }
     });
 
-    els.b.addEventListener('click', () => {
-      scoreB = inc(scoreB);
-      save('scoreB', scoreB);
-      render();
-    });
-
+    // 初回
     render();
+    requestWakeLock();
+
+    // iOS Safari は wakeLock 非対応のことが多いです（その場合は通常通りスリープします）
   </script>
 </body>
 </html>
