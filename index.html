@@ -38,7 +38,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 14px;
       width: min(980px, 100%);
-      height: min(86vh, 620px); /* ★ 画面をより使う */
+      height: min(86vh, 620px);
       box-sizing: border-box;
     }
 
@@ -46,7 +46,6 @@
       position: relative;
       display: grid;
       place-items: center;
-
       height: 100%;
       border: 1px solid rgba(255,255,255,.08);
       border-radius: 28px;
@@ -55,15 +54,12 @@
                   linear-gradient(180deg, var(--card1), var(--card2));
       box-shadow: 0 18px 40px rgba(0,0,0,.40);
       color: #fff;
-
-      /* ★ 数字を最大限大きく */
-      font-size: clamp(180px, 26vw, 420px);
+      font-size: clamp(216px, 31vw, 504px); /* ★20%大きく */
       font-weight: 900;
       letter-spacing: .01em;
-
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      padding: 0; /* ★ 余白ゼロで数字面積UP */
+      padding: 0;
       overflow: hidden;
     }
 
@@ -72,7 +68,6 @@
       filter: brightness(1.10);
     }
 
-    /* 左右識別（先/後） */
     button.score .tag{
       position: absolute;
       top: 14px;
@@ -89,11 +84,10 @@
     button.score .tag.left{ left: 14px; }
     button.score .tag.right{ right: 14px; }
 
-    /* ★ 数字の視認性強化（縁取り＋影） */
     button.score .num{
       font-size: inherit;
       line-height: 1;
-      transform: translateY(2px); /* 見た目の中央寄せ微調整 */
+      transform: translateY(2px);
       text-shadow:
         0 6px 18px rgba(0,0,0,.55),
         0 2px 0 rgba(0,0,0,.35);
@@ -101,10 +95,35 @@
       paint-order: stroke fill;
     }
 
-    /* 画面が縦長のとき：2列は維持しつつ高さ確保 */
+    /* マイナスボタン */
+    button.score .minus{
+      position: absolute;
+      bottom: 16px;
+      font-size: 28px;
+      font-weight: 900;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.15);
+      cursor: pointer;
+      user-select: none;
+    }
+    button.score .minus.left{ left: 16px; }
+    button.score .minus.right{ right: 16px; }
+    button.score .minus:active{
+      transform: scale(0.95);
+      filter: brightness(1.2);
+    }
+
     @media (max-width: 520px){
       .row{ height: 88vh; gap: 12px; }
-      button.score{ font-size: clamp(170px, 34vw, 380px); border-radius: 26px; }
+      button.score{
+        font-size: clamp(204px, 41vw, 456px); /* ★20%大きく */
+        border-radius: 26px;
+      }
       button.score .tag{ font-size: 15px; }
       button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
     }
@@ -115,10 +134,12 @@
     <div class="row">
       <button class="score" id="a" aria-label="先攻">
         <span class="tag left">先</span>
+        <span class="minus left">−</span>
         <span class="num">0</span>
       </button>
       <button class="score" id="b" aria-label="後攻">
         <span class="tag right">後</span>
+        <span class="minus right">−</span>
         <span class="num">0</span>
       </button>
     </div>
@@ -146,6 +167,7 @@
       numB.textContent = scoreB;
     }
     function inc(v){ return (v >= MAX) ? 0 : (v + 1); }
+    function dec(v){ return (v <= 0) ? 0 : (v - 1); }
 
     function bindScoreButton(btn, get, set, key){
       let timer = null;
@@ -154,6 +176,7 @@
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
       btn.addEventListener('pointerdown', (e) => {
+        if(e.target.classList.contains('minus')) return;
         e.preventDefault?.();
         longPressed = false;
         clear();
@@ -182,6 +205,20 @@
 
     bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
     bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
+
+    // マイナス処理
+    els.a.querySelector('.minus').addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      scoreA = dec(scoreA);
+      save('scoreA', scoreA);
+      render();
+    });
+    els.b.querySelector('.minus').addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      scoreB = dec(scoreB);
+      save('scoreB', scoreB);
+      render();
+    });
 
     // Wake Lock
     let wakeLock = null;
