@@ -34,7 +34,7 @@
       position: relative; /* HUD用 */
     }
 
-    /* 画面上のHUD（メインスコアの邪魔をしない薄い表示） */
+    /* HUD */
     .hud{
       position: absolute;
       top: 10px;
@@ -44,27 +44,28 @@
       gap: 10px;
       align-items: flex-start;
       justify-content: space-between;
-      pointer-events: none; /* ここ自体はタップ無効（ボタンだけ有効化する） */
+      pointer-events: none;
       z-index: 10;
     }
 
     .history{
       pointer-events: none;
-      max-width: 70%;
+      max-width: 74%;
       display: grid;
-      gap: 6px;
+      gap: 8px;
     }
 
+    /* ★セット表示を大きく（2倍以上） */
     .history .line{
-      font-size: 13px;
-      font-weight: 800;
+      font-size: 28px;            /* 13px → 28px */
+      font-weight: 900;
       letter-spacing: .01em;
-      opacity: .55;              /* ★薄く */
-      line-height: 1.15;
-      padding: 6px 10px;
+      opacity: .62;               /* 少しだけ濃くして見やすく */
+      line-height: 1.1;
+      padding: 8px 12px;
       border-radius: 999px;
       background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(6px);
       width: fit-content;
       max-width: 100%;
@@ -73,9 +74,9 @@
       white-space: nowrap;
     }
 
-    /* 次セットボタン（誤タップ防止で長押しのみ） */
+    /* 次セット（長押し） */
     .nextset{
-      pointer-events: auto; /* ★これだけ押せる */
+      pointer-events: auto;
       appearance: none;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.08);
@@ -125,7 +126,6 @@
       box-shadow: 0 18px 40px rgba(0,0,0,.40);
       color: #fff;
 
-      /* 数字をさらに大きく（ユーザー調整版） */
       font-size: clamp(260px, 37vw, 605px);
       font-weight: 900;
       letter-spacing: .01em;
@@ -141,22 +141,6 @@
       filter: brightness(1.10);
     }
 
-    button.score .tag{
-      position: absolute;
-      top: 14px;
-      font-size: 16px;
-      font-weight: 900;
-      opacity: .85;
-      line-height: 1;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(6px);
-    }
-    button.score .tag.left{ left: 14px; }
-    button.score .tag.right{ right: 14px; }
-
     button.score .num{
       font-size: inherit;
       line-height: 1;
@@ -168,7 +152,7 @@
       paint-order: stroke fill;
     }
 
-    /* マイナスボタン */
+    /* マイナス */
     button.score .minus{
       position: absolute;
       bottom: 16px;
@@ -199,10 +183,10 @@
         font-size: clamp(245px, 49vw, 550px);
         border-radius: 26px;
       }
-      button.score .tag{ font-size: 15px; }
       button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
 
-      .history .line{ font-size: 12px; }
+      /* スマホでもセット表示を大きめに */
+      .history .line{ font-size: 22px; padding: 7px 10px; }
       .nextset{ font-size: 12px; padding: 9px 11px; }
     }
   </style>
@@ -210,7 +194,6 @@
 
 <body>
   <div class="wrap">
-    <!-- ★セット履歴（薄く小さく）＋ 次セット（長押し） -->
     <div class="hud" aria-hidden="false">
       <div class="history" id="history" aria-label="セットスコア履歴"></div>
 
@@ -221,15 +204,13 @@
     </div>
 
     <div class="row">
-      <button class="score" id="a" aria-label="先攻">
-        <span class="tag left">先</span>
-        <span class="minus left" aria-label="先攻を1減らす" role="button">−</span>
+      <button class="score" id="a" aria-label="左">
+        <span class="minus left" aria-label="左を1減らす" role="button">−</span>
         <span class="num">0</span>
       </button>
 
-      <button class="score" id="b" aria-label="後攻">
-        <span class="tag right">後</span>
-        <span class="minus right" aria-label="後攻を1減らす" role="button">−</span>
+      <button class="score" id="b" aria-label="右">
+        <span class="minus right" aria-label="右を1減らす" role="button">−</span>
         <span class="num">0</span>
       </button>
     </div>
@@ -252,14 +233,11 @@
 
     const load = (k) => localStorage.getItem(k);
     const save = (k, v) => localStorage.setItem(k, String(v));
-
     const loadNum = (k) => Number(load(k) ?? 0);
 
-    // スコア
     let scoreA = loadNum('scoreA');
     let scoreB = loadNum('scoreB');
 
-    // セット履歴（配列）
     function loadHistory(){
       try{
         const raw = load('setHistory');
@@ -287,7 +265,6 @@
     function renderHistory(){
       const lines = setHistory.slice(-HISTORY_MAX_LINES);
       els.history.innerHTML = lines.map((x) => {
-        // x: {n:1, a:6, b:3}
         const label = `${x.n}set ${x.a}-${x.b}`;
         return `<div class="line">${label}</div>`;
       }).join('');
@@ -319,7 +296,7 @@
 
       btn.addEventListener('pointerup', (e) => {
         clear();
-        if(isMinusTarget(e)) return; // ★マイナス押下後の+1防止
+        if(isMinusTarget(e)) return; // マイナス押下後の+1防止
         if(!longPressed){
           const v = inc(get());
           set(v);
@@ -335,7 +312,6 @@
     bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
     bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
 
-    // マイナス（親のpointerupへ伝播させない）
     function bindMinus(minusEl, get, set, key){
       minusEl.addEventListener('pointerdown', (e)=>{
         e.preventDefault?.();
@@ -359,9 +335,7 @@
     bindMinus(els.a.querySelector('.minus'), ()=>scoreA, (v)=>{ scoreA = v; }, 'scoreA');
     bindMinus(els.b.querySelector('.minus'), ()=>scoreB, (v)=>{ scoreB = v; }, 'scoreB');
 
-    // ★次セット（長押し）：現在のスコアを履歴に入れて0-0へ
     function pushCurrentSetAndReset(){
-      // 0-0 は登録しない（誤操作対策）
       if(scoreA === 0 && scoreB === 0){
         navigator.vibrate?.(8);
         return;
@@ -397,7 +371,6 @@
       els.nextSetBtn.addEventListener('pointerup', (e)=>{
         e.preventDefault?.();
         clear();
-        // 長押し以外は何もしない（誤操作防止）
         if(!fired) navigator.vibrate?.(6);
       });
 
