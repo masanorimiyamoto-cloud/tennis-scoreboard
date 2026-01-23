@@ -31,76 +31,6 @@
       place-items: center;
       padding: 12px;
       box-sizing: border-box;
-      position: relative; /* HUD用 */
-    }
-
-    /* 画面上のHUD（メインスコアの邪魔をしない薄い表示） */
-    .hud{
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      justify-content: space-between;
-      pointer-events: none; /* ここ自体はタップ無効（ボタンだけ有効化する） */
-      z-index: 10;
-    }
-
-    .history{
-      pointer-events: none;
-      max-width: 70%;
-      display: grid;
-      gap: 6px;
-    }
-
-    .history .line{
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: .01em;
-      opacity: .55;              /* ★薄く */
-      line-height: 1.15;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(6px);
-      width: fit-content;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* 次セットボタン（誤タップ防止で長押しのみ） */
-    .nextset{
-      pointer-events: auto; /* ★これだけ押せる */
-      appearance: none;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: rgba(255,255,255,.85);
-      font-size: 13px;
-      font-weight: 900;
-      padding: 10px 12px;
-      border-radius: 999px;
-      backdrop-filter: blur(6px);
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      opacity: .75;
-    }
-    .nextset:active{
-      transform: scale(0.98);
-      opacity: .95;
-    }
-    .nextset .hint{
-      font-size: 11px;
-      font-weight: 800;
-      opacity: .75;
     }
 
     .row{
@@ -125,8 +55,8 @@
       box-shadow: 0 18px 40px rgba(0,0,0,.40);
       color: #fff;
 
-      /* 数字をさらに大きく（ユーザー調整版） */
-      font-size: clamp(260px, 37vw, 605px);
+      /* 数字を20%大きく */
+      font-size: clamp(216px, 31vw, 504px);
       font-weight: 900;
       letter-spacing: .01em;
 
@@ -196,30 +126,16 @@
     @media (max-width: 520px){
       .row{ height: 88vh; gap: 12px; }
       button.score{
-        font-size: clamp(245px, 49vw, 550px);
+        font-size: clamp(204px, 41vw, 456px);
         border-radius: 26px;
       }
       button.score .tag{ font-size: 15px; }
       button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
-
-      .history .line{ font-size: 12px; }
-      .nextset{ font-size: 12px; padding: 9px 11px; }
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <!-- ★セット履歴（薄く小さく）＋ 次セット（長押し） -->
-    <div class="hud" aria-hidden="false">
-      <div class="history" id="history" aria-label="セットスコア履歴"></div>
-
-      <button class="nextset" id="nextSetBtn" aria-label="長押しで次セット（セットスコア保存して0-0）">
-        次セット
-        <span class="hint">長押し</span>
-      </button>
-    </div>
-
     <div class="row">
       <button class="score" id="a" aria-label="先攻">
         <span class="tag left">先</span>
@@ -237,61 +153,28 @@
 
   <script>
     const MAX = 6;
-    const LONG_PRESS_MS = 600;        // スコア長押しリセット
-    const NEXT_SET_LONG_MS = 650;     // 次セットは誤操作防止で少し長め
-    const HISTORY_MAX_LINES = 5;      // 表示は最大5行（邪魔しない）
+    const LONG_PRESS_MS = 600;
 
     const els = {
       a: document.getElementById('a'),
-      b: document.getElementById('b'),
-      history: document.getElementById('history'),
-      nextSetBtn: document.getElementById('nextSetBtn')
+      b: document.getElementById('b')
     };
     const numA = els.a.querySelector('.num');
     const numB = els.b.querySelector('.num');
 
-    const load = (k) => localStorage.getItem(k);
+    const load = (k) => Number(localStorage.getItem(k) ?? 0);
     const save = (k, v) => localStorage.setItem(k, String(v));
 
-    const loadNum = (k) => Number(load(k) ?? 0);
-
-    // スコア
-    let scoreA = loadNum('scoreA');
-    let scoreB = loadNum('scoreB');
-
-    // セット履歴（配列）
-    function loadHistory(){
-      try{
-        const raw = load('setHistory');
-        if(!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr : [];
-      }catch{
-        return [];
-      }
-    }
-    function saveHistory(arr){
-      save('setHistory', JSON.stringify(arr));
-    }
-    let setHistory = loadHistory();
-
-    function inc(v){ return (v >= MAX) ? 0 : (v + 1); }
-    function dec(v){ return (v <= 0) ? 0 : (v - 1); }
+    let scoreA = load('scoreA');
+    let scoreB = load('scoreB');
 
     function render(){
       numA.textContent = scoreA;
       numB.textContent = scoreB;
-      renderHistory();
     }
 
-    function renderHistory(){
-      const lines = setHistory.slice(-HISTORY_MAX_LINES);
-      els.history.innerHTML = lines.map((x) => {
-        // x: {n:1, a:6, b:3}
-        const label = `${x.n}set ${x.a}-${x.b}`;
-        return `<div class="line">${label}</div>`;
-      }).join('');
-    }
+    function inc(v){ return (v >= MAX) ? 0 : (v + 1); }
+    function dec(v){ return (v <= 0) ? 0 : (v - 1); }
 
     function isMinusTarget(e){
       return !!(e.target && e.target.classList && e.target.classList.contains('minus'));
@@ -303,8 +186,9 @@
 
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
+      // 押し始め（長押しリセット用）
       btn.addEventListener('pointerdown', (e) => {
-        if(isMinusTarget(e)) return;
+        if(isMinusTarget(e)) return; // マイナスは別処理
         e.preventDefault?.();
         longPressed = false;
         clear();
@@ -317,9 +201,10 @@
         }, LONG_PRESS_MS);
       });
 
+      // 離した（通常加点）
       btn.addEventListener('pointerup', (e) => {
         clear();
-        if(isMinusTarget(e)) return; // ★マイナス押下後の+1防止
+        if(isMinusTarget(e)) return; // ★マイナス押下後の+1を防止
         if(!longPressed){
           const v = inc(get());
           set(v);
@@ -335,7 +220,10 @@
     bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
     bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
 
-    // マイナス（親のpointerupへ伝播させない）
+    // マイナス処理（親のpointerupを発火させない）
+    const minusA = els.a.querySelector('.minus');
+    const minusB = els.b.querySelector('.minus');
+
     function bindMinus(minusEl, get, set, key){
       minusEl.addEventListener('pointerdown', (e)=>{
         e.preventDefault?.();
@@ -346,6 +234,7 @@
         render();
         navigator.vibrate?.(10);
       });
+      // ★ここが重要：pointerupも止める（環境によって親に伝播するため）
       minusEl.addEventListener('pointerup', (e)=>{
         e.preventDefault?.();
         e.stopPropagation();
@@ -356,54 +245,8 @@
       });
     }
 
-    bindMinus(els.a.querySelector('.minus'), ()=>scoreA, (v)=>{ scoreA = v; }, 'scoreA');
-    bindMinus(els.b.querySelector('.minus'), ()=>scoreB, (v)=>{ scoreB = v; }, 'scoreB');
-
-    // ★次セット（長押し）：現在のスコアを履歴に入れて0-0へ
-    function pushCurrentSetAndReset(){
-      // 0-0 は登録しない（誤操作対策）
-      if(scoreA === 0 && scoreB === 0){
-        navigator.vibrate?.(8);
-        return;
-      }
-      const n = setHistory.length + 1;
-      setHistory.push({ n, a: scoreA, b: scoreB });
-      saveHistory(setHistory);
-
-      scoreA = 0; scoreB = 0;
-      save('scoreA', 0);
-      save('scoreB', 0);
-
-      render();
-      navigator.vibrate?.(25);
-    }
-
-    (function bindNextSetLongPress(){
-      let timer = null;
-      let fired = false;
-
-      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
-
-      els.nextSetBtn.addEventListener('pointerdown', (e)=>{
-        e.preventDefault?.();
-        fired = false;
-        clear();
-        timer = setTimeout(()=>{
-          fired = true;
-          pushCurrentSetAndReset();
-        }, NEXT_SET_LONG_MS);
-      });
-
-      els.nextSetBtn.addEventListener('pointerup', (e)=>{
-        e.preventDefault?.();
-        clear();
-        // 長押し以外は何もしない（誤操作防止）
-        if(!fired) navigator.vibrate?.(6);
-      });
-
-      els.nextSetBtn.addEventListener('pointercancel', clear);
-      els.nextSetBtn.addEventListener('pointerleave', clear);
-    })();
+    bindMinus(minusA, ()=>scoreA, (v)=>{ scoreA = v; }, 'scoreA');
+    bindMinus(minusB, ()=>scoreB, (v)=>{ scoreB = v; }, 'scoreB');
 
     // Wake Lock
     let wakeLock = null;
