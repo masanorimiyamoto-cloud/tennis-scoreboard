@@ -48,14 +48,14 @@
       z-index: 10;
     }
 
-    /* ★セット履歴を横並びにする */
+    /* セット履歴（横並び） */
     .history{
       pointer-events: none;
-      max-width: 78%;
-      display: flex;              /* ←縦のgridをやめて横並び */
+      max-width: 72%;
+      display: flex;
       gap: 10px;
       align-items: center;
-      flex-wrap: wrap;            /* 収まらなければ次の行へ */
+      flex-wrap: wrap;
     }
 
     .history .line{
@@ -74,8 +74,15 @@
       white-space: nowrap;
     }
 
-    .nextset{
+    /* 右側ボタン群 */
+    .actions{
       pointer-events: auto;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn{
       appearance: none;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.08);
@@ -93,14 +100,19 @@
       gap: 8px;
       opacity: .75;
     }
-    .nextset:active{
+    .btn:active{
       transform: scale(0.98);
       opacity: .95;
     }
-    .nextset .hint{
+    .btn .hint{
       font-size: 11px;
       font-weight: 800;
       opacity: .75;
+    }
+
+    /* 全消しボタンは少し目立たせすぎない */
+    .btn.danger{
+      opacity: .62;
     }
 
     .row{
@@ -183,12 +195,9 @@
       }
       button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
 
-      .history{
-        max-width: 74%;
-        gap: 8px;
-      }
+      .history{ max-width: 66%; gap: 8px; }
       .history .line{ font-size: 22px; padding: 7px 10px; }
-      .nextset{ font-size: 12px; padding: 9px 11px; }
+      .btn{ font-size: 12px; padding: 9px 11px; }
     }
   </style>
 </head>
@@ -198,10 +207,15 @@
     <div class="hud" aria-hidden="false">
       <div class="history" id="history" aria-label="セットスコア履歴"></div>
 
-      <button class="nextset" id="nextSetBtn" aria-label="長押しで次セット（セットスコア保存して0-0）">
-        次セット
-        <span class="hint">長押し</span>
-      </button>
+      <div class="actions">
+        <button class="btn" id="nextSetBtn" aria-label="長押しで次セット（セットスコア保存して0-0）">
+          次セット <span class="hint">長押し</span>
+        </button>
+
+        <button class="btn danger" id="fullResetBtn" aria-label="長押しで全消し（セット履歴も含めて全部リセット）">
+          全消し <span class="hint">長押し</span>
+        </button>
+      </div>
     </div>
 
     <div class="row">
@@ -219,21 +233,24 @@
 
   <script>
     const MAX = 6;
-    const LONG_PRESS_MS = 600;
-    const NEXT_SET_LONG_MS = 650;
+    const LONG_PRESS_MS = 600;        // スコア長押しリセット（片側）
+    const NEXT_SET_LONG_MS = 650;     // 次セット
+    const FULL_RESET_LONG_MS = 1200;  // ★全消し（誤爆防止で長め）
     const HISTORY_MAX_LINES = 5;
 
     const els = {
       a: document.getElementById('a'),
       b: document.getElementById('b'),
       history: document.getElementById('history'),
-      nextSetBtn: document.getElementById('nextSetBtn')
+      nextSetBtn: document.getElementById('nextSetBtn'),
+      fullResetBtn: document.getElementById('fullResetBtn')
     };
     const numA = els.a.querySelector('.num');
     const numB = els.b.querySelector('.num');
 
     const load = (k) => localStorage.getItem(k);
     const save = (k, v) => localStorage.setItem(k, String(v));
+    const del = (k) => localStorage.removeItem(k);
     const loadNum = (k) => Number(load(k) ?? 0);
 
     let scoreA = loadNum('scoreA');
@@ -353,31 +370,47 @@
       navigator.vibrate?.(25);
     }
 
-    (function bindNextSetLongPress(){
+    function fullResetAll(){
+      scoreA = 0; scoreB = 0;
+      setHistory = [];
+
+      // localStorageも全消し（このアプリが使うキーだけ）
+      del('scoreA');
+      del('scoreB');
+      del('setHistory');
+
+      render();
+      navigator.vibrate?.(35);
+    }
+
+    function bindLongPressButton(btn, ms, onFire){
       let timer = null;
       let fired = false;
 
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
-      els.nextSetBtn.addEventListener('pointerdown', (e)=>{
+      btn.addEventListener('pointerdown', (e)=>{
         e.preventDefault?.();
         fired = false;
         clear();
         timer = setTimeout(()=>{
           fired = true;
-          pushCurrentSetAndReset();
-        }, NEXT_SET_LONG_MS);
+          onFire();
+        }, ms);
       });
 
-      els.nextSetBtn.addEventListener('pointerup', (e)=>{
+      btn.addEventListener('pointerup', (e)=>{
         e.preventDefault?.();
         clear();
         if(!fired) navigator.vibrate?.(6);
       });
 
-      els.nextSetBtn.addEventListener('pointercancel', clear);
-      els.nextSetBtn.addEventListener('pointerleave', clear);
-    })();
+      btn.addEventListener('pointercancel', clear);
+      btn.addEventListener('pointerleave', clear);
+    }
+
+    bindLongPressButton(els.nextSetBtn, NEXT_SET_LONG_MS, pushCurrentSetAndReset);
+    bindLongPressButton(els.fullResetBtn, FULL_RESET_LONG_MS, fullResetAll);
 
     // Wake Lock
     let wakeLock = null;
