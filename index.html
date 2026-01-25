@@ -1,239 +1,241 @@
-```html
 <!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Tennis Score (0-6)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <title>Tennis Score (0-7)</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
-      --bg1:#070b16;
-      --bg2:#0b1020;
-      --card1:#101933;
-      --card2:#0f1730;
-      --stroke: rgba(0,0,0,.55);
+      --bg1: #050810;
+      --bg2: #0f1525;
+      --accent: #00f2ff; /* Cyber Cyan */
+      --glass: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-glow: 0 0 20px rgba(0, 242, 255, 0.4);
     }
 
     html, body {
       height: 100%;
       margin: 0;
-      background: radial-gradient(1200px 800px at 50% 10%, rgba(90,120,255,.20), transparent 55%),
-                  linear-gradient(180deg, var(--bg1), var(--bg2));
+      background: radial-gradient(circle at 50% -20%, #1a2a4f 0%, var(--bg1) 60%), var(--bg1);
       color: #fff;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+      font-family: 'Chakra Petch', sans-serif;
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
+      overflow: hidden;
     }
 
     .wrap{
       height: 100%;
       display: grid;
       place-items: center;
-      padding: 12px;
+      padding: env(safe-area-inset-top) 16px 20px 16px;
       box-sizing: border-box;
       position: relative;
     }
 
-    /* HUD */
+    /* HUD (Top Bar) */
     .hud{
       position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
+      top: env(safe-area-inset-top);
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: flex-start;
       justify-content: space-between;
       pointer-events: none;
       z-index: 10;
     }
 
-    /* セット履歴（横並び） */
+    /* History Pills */
     .history{
       pointer-events: none;
-      max-width: 72%;
       display: flex;
-      gap: 10px;
-      align-items: center;
+      gap: 6px;
       flex-wrap: wrap;
+      max-width: 65%;
     }
-
     .history .line{
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: .01em;
-      opacity: .62;
-      line-height: 1.1;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(6px);
-      width: fit-content;
-      max-width: 100%;
-      white-space: nowrap;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 4px;
+      background: rgba(0, 242, 255, 0.1);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
+      letter-spacing: 1px;
     }
 
-    /* 右側ボタン群 */
+    /* Action Buttons */
     .actions{
       pointer-events: auto;
-      display: inline-flex;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
+      align-items: flex-end;
     }
 
     .btn{
       appearance: none;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: rgba(255,255,255,.85);
-      font-size: 13px;
-      font-weight: 900;
-      padding: 10px 12px;
-      border-radius: 999px;
-      backdrop-filter: blur(6px);
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      color: rgba(255,255,255,0.8);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      opacity: .75;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
     }
     .btn:active{
-      transform: scale(0.98);
-      opacity: .95;
+      background: rgba(255,255,255,0.15);
+      transform: scale(0.96);
     }
-    .btn .hint{
-      font-size: 11px;
-      font-weight: 800;
-      opacity: .75;
-    }
-    .btn.danger{ opacity: .62; }
+    .btn.next{ border-color: rgba(0,242,255,0.3); color: var(--accent); }
+    .btn .hint{ font-size: 9px; opacity: 0.6; display: block; text-align: right; margin-top: 2px;}
 
+    /* Main Score Area */
     .row{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      width: min(980px, 100%);
-      height: min(86vh, 620px);
-      box-sizing: border-box;
+      gap: 16px;
+      width: 100%;
+      height: 100%;
+      max-height: 80vh;
+      align-content: center;
     }
 
     button.score{
       position: relative;
-      display: grid;
-      place-items: center;
-      height: 100%;
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 28px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
-                  radial-gradient(900px 450px at 50% 0%, rgba(90,120,255,.15), transparent 60%),
-                  linear-gradient(180deg, var(--card1), var(--card2));
-      box-shadow: 0 18px 40px rgba(0,0,0,.40);
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
+      border-radius: 24px;
+      box-shadow: 
+        0 20px 50px -10px rgba(0,0,0,0.5),
+        inset 0 1px 1px rgba(255,255,255,0.15);
       color: #fff;
-
-      font-size: clamp(260px, 37vw, 605px);
-      font-weight: 900;
-      letter-spacing: .01em;
-
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
       padding: 0;
       overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
     }
 
+    /* Active State (The Juice) */
     button.score:active{
-      transform: scale(0.99);
-      filter: brightness(1.10);
+      transform: scale(0.97);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6);
+      border-color: rgba(255,255,255,0.2);
+    }
+    /* Flashing effect on score change */
+    button.score.flash {
+      background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
     }
 
     button.score .num{
-      font-size: inherit;
+      font-size: clamp(120px, 35vw, 400px);
+      font-weight: 600;
       line-height: 1;
-      transform: translateY(2px);
-      text-shadow:
-        0 6px 18px rgba(0,0,0,.55),
-        0 2px 0 rgba(0,0,0,.35);
-      -webkit-text-stroke: 6px var(--stroke);
-      paint-order: stroke fill;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 2;
+      font-variant-numeric: tabular-nums;
     }
 
+    /* Minus Button - Subtle */
     button.score .minus{
       position: absolute;
-      bottom: 16px;
-      font-size: 28px;
-      font-weight: 900;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.15);
-      cursor: pointer;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20%;
+      min-height: 80px;
+      background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 20px;
+      font-size: 32px;
+      color: rgba(255,255,255,0.4);
+      opacity: 0; /* Hidden by default */
+      transition: opacity 0.2s;
     }
-    button.score .minus.left{ left: 16px; }
-    button.score .minus.right{ right: 16px; }
-    button.score .minus:active{
-      transform: scale(0.95);
-      filter: brightness(1.2);
+    button.score .minus:active { color: #fff; background: rgba(255, 50, 50, 0.2); }
+    
+    /* Show minus hint on hover/touch if needed, currently kept invisible for clean look 
+       but clickable area is there */
+    button.score:active .minus { opacity: 1; } 
+
+    /* Decoration Lines */
+    .deco-line{
+      position: absolute;
+      top: 20px;
+      width: 40px;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
     }
 
-    @media (max-width: 520px){
-      .row{ height: 88vh; gap: 12px; }
-      button.score{
-        font-size: clamp(245px, 49vw, 550px);
-        border-radius: 26px;
-      }
-      button.score .num{ -webkit-text-stroke: 5px var(--stroke); }
-
-      .history{ max-width: 66%; gap: 8px; }
-      .history .line{ font-size: 22px; padding: 7px 10px; }
-      .btn{ font-size: 12px; padding: 9px 11px; }
+    @media (max-width: 500px){
+      .row{ gap: 10px; max-height: 85vh; }
+      button.score{ border-radius: 20px; }
+      .history .line{ font-size: 15px; }
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="hud" aria-hidden="false">
-      <div class="history" id="history" aria-label="セットスコア履歴"></div>
-
+    <div class="hud">
+      <div class="history" id="history"></div>
+      
       <div class="actions">
-        <button class="btn" id="nextSetBtn" aria-label="長押しで次セット（セットスコア保存して0-0）">
-          次セット <span class="hint">長押し</span>
+        <button class="btn next" id="nextSetBtn">
+          NEXT SET <span class="hint">HOLD</span>
         </button>
-
-        <button class="btn danger" id="fullResetBtn" aria-label="長押しで全消し（セット履歴も含めて全部リセット）">
-          全消し <span class="hint">長押し</span>
+        <button class="btn" id="fullResetBtn">
+          RESET <span class="hint">HOLD</span>
         </button>
       </div>
     </div>
 
     <div class="row">
-      <button class="score" id="a" aria-label="左">
-        <span class="minus left" aria-label="左を1減らす" role="button">−</span>
+      <button class="score" id="a">
+        <div class="deco-line"></div>
         <span class="num">0</span>
+        <div class="minus" role="button">−</div>
       </button>
 
-      <button class="score" id="b" aria-label="右">
-        <span class="minus right" aria-label="右を1減らす" role="button">−</span>
+      <button class="score" id="b">
+        <div class="deco-line"></div>
         <span class="num">0</span>
+        <div class="minus" role="button">−</div>
       </button>
     </div>
   </div>
 
   <script>
     // ===== Config =====
-    const MAX = 6;
-    const MS_SCORE_RESET = 600;   // スコア長押し（片側）リセット
-    const MS_NEXT_SET   = 650;   // 次セット
-    const MS_FULL_RESET = 1200;  // 全消し（誤爆防止）
+    const MAX = 7; // タイブレーク考慮で7に変更
+    const MS_SCORE_RESET = 800;  
+    const MS_NEXT_SET   = 650;  
+    const MS_FULL_RESET = 1200; 
     const HISTORY_MAX   = 5;
 
     // ===== DOM =====
@@ -249,20 +251,14 @@
     const numB = $('.num', els.b);
 
     // ===== Storage =====
-    const KEYS = { A:'scoreA', B:'scoreB', H:'setHistory' };
+    const KEYS = { A:'scoreA_v2', B:'scoreB_v2', H:'setHistory_v2' }; // Key updated for v2
     const store = {
       getNum: (k, def=0) => Number(localStorage.getItem(k) ?? def),
       set: (k, v) => localStorage.setItem(k, String(v)),
       del: (k) => localStorage.removeItem(k),
       getJSON: (k, def) => {
-        try{
-          const raw = localStorage.getItem(k);
-          if(!raw) return def;
-          const v = JSON.parse(raw);
-          return v ?? def;
-        }catch{
-          return def;
-        }
+        try{ return JSON.parse(localStorage.getItem(k)) ?? def; }
+        catch{ return def; }
       },
       setJSON: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
@@ -271,17 +267,19 @@
     let scoreA = store.getNum(KEYS.A, 0);
     let scoreB = store.getNum(KEYS.B, 0);
     let history = store.getJSON(KEYS.H, []);
-    if(!Array.isArray(history)) history = [];
 
     // ===== Utils =====
     const vib = (ms) => navigator.vibrate?.(ms);
     const inc = (v) => (v >= MAX) ? 0 : (v + 1);
     const dec = (v) => (v <= 0) ? 0 : (v - 1);
-    const isMinus = (e) => e?.target?.classList?.contains('minus');
+    const isMinus = (e) => e.target.classList.contains('minus');
 
     function render(){
       numA.textContent = scoreA;
       numB.textContent = scoreB;
+      
+      // Colorize logic: Leader gets cyber accent color? Optional. 
+      // Keeping it white for clarity, but history gets color.
 
       const lines = history.slice(-HISTORY_MAX).map(x => `${x.a}-${x.b}`);
       els.history.innerHTML = lines.map(t => `<div class="line">${t}</div>`).join('');
@@ -293,6 +291,11 @@
       render();
     }
 
+    function flashBtn(btn){
+      btn.classList.add('flash');
+      setTimeout(()=> btn.classList.remove('flash'), 150);
+    }
+
     // ===== Score buttons =====
     function bindScore(btn, which){
       let timer = null;
@@ -302,13 +305,14 @@
 
       btn.addEventListener('pointerdown', (e) => {
         if(isMinus(e)) return;
-        e.preventDefault?.();
+        // e.preventDefault(); // allow scroll/zoom if needed, but mostly prevent for app feel
         longPressed = false;
         clear();
         timer = setTimeout(() => {
           longPressed = true;
           setScore(which, 0);
-          vib(20);
+          vib(50);
+          flashBtn(btn);
         }, MS_SCORE_RESET);
       });
 
@@ -318,75 +322,65 @@
         if(!longPressed){
           const cur = (which === 'A') ? scoreA : scoreB;
           setScore(which, inc(cur));
+          vib(10);
+          flashBtn(btn); // Visual Feedback
         }
       });
-
+      
       btn.addEventListener('pointercancel', clear);
       btn.addEventListener('pointerleave', clear);
     }
 
-    function bindMinus(minusEl, which){
-      const onDown = (e) => {
-        e.preventDefault?.();
-        e.stopPropagation();
+    function bindMinus(btn, which){
+      const minusEl = btn.querySelector('.minus');
+      minusEl.addEventListener('pointerdown', (e) => {
+        e.stopPropagation(); // prevent parent click
         const cur = (which === 'A') ? scoreA : scoreB;
         setScore(which, dec(cur));
-        vib(10);
-      };
-      const stop = (e) => { e.preventDefault?.(); e.stopPropagation(); };
-
-      minusEl.addEventListener('pointerdown', onDown);
-      minusEl.addEventListener('pointerup', stop);
-      minusEl.addEventListener('pointercancel', stop);
+        vib(20);
+      });
     }
 
     bindScore(els.a, 'A');
     bindScore(els.b, 'B');
-    bindMinus($('.minus', els.a), 'A');
-    bindMinus($('.minus', els.b), 'B');
+    bindMinus(els.a, 'A');
+    bindMinus(els.b, 'B');
 
-    // ===== Set history + reset =====
+    // ===== Action Buttons =====
     function pushCurrentSetAndReset(){
-      if(scoreA === 0 && scoreB === 0){ vib(8); return; }
-
+      if(scoreA === 0 && scoreB === 0){ vib(10); return; }
       history.push({ a: scoreA, b: scoreB });
       store.setJSON(KEYS.H, history);
-
       scoreA = 0; scoreB = 0;
-      store.set(KEYS.A, 0);
-      store.set(KEYS.B, 0);
-
+      store.set(KEYS.A, 0); store.set(KEYS.B, 0);
       render();
-      vib(25);
+      vib([30, 50, 30]); // Distinct pattern
     }
 
     function fullResetAll(){
       scoreA = 0; scoreB = 0; history = [];
       store.del(KEYS.A); store.del(KEYS.B); store.del(KEYS.H);
       render();
-      vib(35);
+      vib(100);
     }
 
-    // ===== Long-press buttons =====
     function bindLongPress(btn, ms, onFire){
       let timer = null;
       let fired = false;
-
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
       btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault?.();
         fired = false;
         clear();
-        timer = setTimeout(() => { fired = true; onFire(); }, ms);
+        btn.style.transform = "scale(0.92)"; // press effect
+        timer = setTimeout(() => { fired = true; onFire(); btn.style.transform = ""; }, ms);
       });
 
       btn.addEventListener('pointerup', (e) => {
-        e.preventDefault?.();
         clear();
-        if(!fired) vib(6);
+        btn.style.transform = ""; 
+        if(!fired) vib(5);
       });
-
       btn.addEventListener('pointercancel', clear);
       btn.addEventListener('pointerleave', clear);
     }
@@ -396,18 +390,11 @@
 
     // ===== Wake Lock =====
     let wakeLock = null;
-    async function requestWakeLock(){
-      try{
-        if(!('wakeLock' in navigator)) return;
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', () => { wakeLock = null; });
-      }catch{
-        wakeLock = null;
-      }
-    }
+    const requestWakeLock = async () => {
+      try { if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch{}
+    };
     document.addEventListener('visibilitychange', () => {
       if(document.visibilityState === 'visible') requestWakeLock();
-      else wakeLock = null;
     });
 
     render();
@@ -415,4 +402,3 @@
   </script>
 </body>
 </html>
-```
