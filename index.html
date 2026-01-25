@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <title>Tennis Score (0-7)</title>
+  <title>Tennis Score Landscape</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,158 +12,185 @@
   <style>
     :root{
       --bg1: #050810;
-      --accent: #00f2ff; /* Cyber Cyan */
-      --danger: #ff3355; /* Neon Red */
-      --glass: rgba(255, 255, 255, 0.05);
-      --glass-border: rgba(255, 255, 255, 0.15);
+      --accent: #00f2ff;
+      --danger: #ff3355;
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.12);
     }
 
     html, body {
       height: 100%;
+      height: 100dvh; /* モバイルブラウザのバー対策 */
       margin: 0;
-      /* 背景を少し落ち着かせ、スコアを見やすく */
-      background: radial-gradient(circle at 50% -30%, #112240 0%, #03050a 70%);
+      background: radial-gradient(circle at 50% 50%, #152036 0%, #03050a 90%);
       color: #fff;
       font-family: 'Chakra Petch', sans-serif;
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
-      overflow: hidden;
+      overflow: hidden; /* スクロール禁止 */
     }
 
     .wrap{
       height: 100%;
-      display: grid;
-      grid-template-rows: auto 1fr;
-      padding: env(safe-area-inset-top) 16px 20px 16px;
+      width: 100%;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
       gap: 10px;
+      padding: 10px;
     }
 
-    /* === HUD (Top Bar) === */
+    /* === HUD (操作パネル) === */
     .hud{
+      flex: 0 0 auto; /* 高さを固定 */
       display: flex;
-      gap: 12px;
-      align-items: flex-start;
+      gap: 10px;
+      align-items: center;
       justify-content: space-between;
       z-index: 10;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 12px;
+      border-radius: 12px;
     }
 
     .history{
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      flex: 1;
+      display: flex; gap: 6px; overflow-x: auto; max-width: 60%;
+      scrollbar-width: none;
     }
     .history .line{
-      font-size: 16px; font-weight: 700; color: var(--accent);
-      padding: 4px 10px; border-radius: 4px;
-      background: rgba(0, 242, 255, 0.1);
-      border: 1px solid rgba(0, 242, 255, 0.2);
+      font-size: 14px; font-weight: 700; color: var(--accent);
+      padding: 2px 8px; border-radius: 4px;
+      background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
+      white-space: nowrap;
     }
 
-    .actions{
-      display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
-    }
-
+    .actions{ display: flex; gap: 8px; }
+    
     .btn-act{
-      appearance: none; border: 1px solid var(--glass-border);
-      background: var(--glass); color: rgba(255,255,255,0.8);
-      font-family: inherit; font-size: 12px; font-weight: 700;
-      padding: 8px 12px; border-radius: 6px; cursor: pointer;
-      transition: all 0.1s;
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: rgba(255,255,255,0.8); font-size: 11px; font-weight: 700;
+      padding: 6px 10px; border-radius: 6px; cursor: pointer;
     }
-    .btn-act:active{ background: rgba(255,255,255,0.2); transform: scale(0.96); }
-    .btn-act.next{ border-color: rgba(0,242,255,0.4); color: var(--accent); }
-    .btn-act .hint{ font-size: 9px; opacity: 0.6; font-weight: 500; margin-left: 4px; }
+    .btn-act:active{ transform: scale(0.95); background: rgba(255,255,255,0.2); }
+    .btn-act.next{ color: var(--accent); border-color: rgba(0,242,255,0.3); }
 
     /* === Main Score Area === */
     .row{
+      flex: 1; /* 残りの高さを全部使う */
+      min-height: 0; /* 子要素のはみ出し防止に必須 */
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      width: 100%; height: 100%;
     }
 
-    /* スコアカード全体 */
+    /* Score Card Layout */
     .score-card{
       position: relative;
-      display: grid;
-      grid-template-rows: 1fr auto; /* 上が巨大、下がボタン */
+      display: flex;
+      flex-direction: column;
       border: 1px solid var(--glass-border);
-      background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.2) 100%);
-      border-radius: 20px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* プラスボタン領域（数字部分） */
+    /* 数字部分 (Plus Button) */
     .btn-plus{
-      appearance: none; border: none; background: transparent;
-      color: #fff; padding: 0; margin: 0; width: 100%; height: 100%;
-      cursor: pointer; display: grid; place-items: center;
-      /* タップ時のフィードバック */
-      transition: background 0.1s, transform 0.1s;
+      flex: 1; /* 余ったスペースを全部埋める */
+      border: none; background: transparent; color: #fff;
+      display: grid; place-items: center;
+      width: 100%; cursor: pointer;
+      /* タップ反応エリア確保 */
+      touch-action: manipulation; 
     }
-    .btn-plus:active{
-      background: rgba(255,255,255,0.05);
-      transform: scale(0.98);
-    }
+    .btn-plus:active{ background: rgba(255,255,255,0.05); }
+    .btn-plus:active .num { transform: scale(0.96); }
 
     .num{
-      font-size: clamp(120px, 36vw, 450px);
-      font-weight: 700;
-      line-height: 1;
+      /* 横向きでも縦向きでも画面からはみ出さない魔法の指定 vmin */
+      font-size: 42vmin; 
+      font-weight: 700; line-height: 1;
       text-shadow: 0 5px 20px rgba(0,0,0,0.5);
       font-variant-numeric: tabular-nums;
+      transition: transform 0.1s;
     }
 
-    /* 明確なマイナスボタン */
+    /* マイナスボタン */
     .btn-minus{
-      appearance: none;
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      background: rgba(0,0,0,0.2); /* 少し暗くして区別 */
-      color: rgba(255,255,255,0.6);
-      font-family: inherit;
-      font-size: 32px; font-weight: 500;
-      padding: 12px 0; /* タップしやすい高さ */
-      width: 100%;
-      cursor: pointer;
-      transition: all 0.1s;
+      flex: 0 0 44px; /* 高さを44pxに固定して確実に表示 */
+      border: none; border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.5);
+      font-size: 24px; font-weight: 700; cursor: pointer;
+      display: grid; place-items: center;
+      padding-bottom: env(safe-area-inset-bottom); /* iPhone下のバー対策 */
     }
-    .btn-minus:active{
-      background: rgba(255, 50, 50, 0.3); /* タップ時に赤く光る */
-      color: #fff;
-    }
+    .btn-minus:active{ background: rgba(255, 50, 50, 0.4); color: #fff; }
 
-    @media (max-width: 500px){ .row{ gap: 8px; } .score-card{ border-radius: 16px; } }
+    /* ========== 横画面 (Landscape) 専用レイアウト ========== */
+    @media (orientation: landscape) and (max-height: 600px) {
+      .wrap{
+        /* 横並びにする: [Card A] [HUD] [Card B] */
+        flex-direction: row; 
+        padding: 5px env(safe-area-inset-right) 5px env(safe-area-inset-left);
+      }
+      
+      .hud{
+        /* 中央に細長く配置 */
+        flex-direction: column;
+        justify-content: center;
+        width: 60px;
+        order: 2; /* 2番目（真ん中） */
+        padding: 10px 4px;
+      }
+      .history{
+        flex-direction: column; overflow-y: auto; overflow-x: hidden;
+        max-height: 50%; max-width: 100%;
+      }
+      .actions{ flex-direction: column; }
+      .btn-act{ font-size: 10px; padding: 8px 4px; text-align: center; }
+      .btn-act span { display: none; } /* "長押し"ヒントを消してスッキリ */
+
+      .row{
+        /* グリッド解除してFlexボックスへ */
+        display: contents; /* wrapのflex直下扱いにする */
+      }
+      
+      .score-card{ flex: 1; min-width: 0; }
+      #cardA{ order: 1; } /* 左 */
+      #cardB{ order: 3; } /* 右 */
+
+      /* 横画面での文字サイズ調整 */
+      .num{ font-size: 50vh; } 
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="hud">
-      <div class="history" id="history" aria-label="セット履歴"></div>
+      <div class="history" id="history"></div>
       <div class="actions">
-        <button class="btn-act next" id="nextSetBtn">NEXT SET<span class="hint">長押し</span></button>
-        <button class="btn-act" id="fullResetBtn">RESET<span class="hint">長押し</span></button>
+        <button class="btn-act next" id="nextSetBtn">NEXT<span> Set</span></button>
+        <button class="btn-act" id="fullResetBtn">RESET</button>
       </div>
     </div>
 
     <div class="row">
       <div class="score-card" id="cardA">
-        <button class="btn-plus" id="btnPlusA" aria-label="左を加算（長押しで0）">
+        <button class="btn-plus" id="btnPlusA">
           <span class="num">0</span>
         </button>
-        <button class="btn-minus" id="btnMinusA" aria-label="左を減算">−</button>
+        <button class="btn-minus" id="btnMinusA">−</button>
       </div>
 
       <div class="score-card" id="cardB">
-        <button class="btn-plus" id="btnPlusB" aria-label="右を加算（長押しで0）">
+        <button class="btn-plus" id="btnPlusB">
           <span class="num">0</span>
         </button>
-        <button class="btn-minus" id="btnMinusB" aria-label="右を減算">−</button>
+        <button class="btn-minus" id="btnMinusB">−</button>
       </div>
     </div>
   </div>
@@ -171,115 +198,105 @@
   <script>
     // ===== Config =====
     const MAX = 7; 
-    const MS_SCORE_RESET = 800;  
-    const MS_NEXT_SET   = 650;  
-    const MS_FULL_RESET = 1200; 
-    const HISTORY_MAX   = 6;
+    const MS_RESET = 800; // 長押し時間
+    const HISTORY_MAX = 6;
 
     // ===== DOM =====
     const $ = (id) => document.getElementById(id);
     const els = {
       cardA: $('cardA'), cardB: $('cardB'),
-      btnPlusA: $('btnPlusA'), btnPlusB: $('btnPlusB'),
-      btnMinusA: $('btnMinusA'), btnMinusB: $('btnMinusB'),
       history: $('history'),
-      nextSetBtn: $('nextSetBtn'), fullResetBtn: $('fullResetBtn'),
+      next: $('nextSetBtn'), reset: $('fullResetBtn'),
     };
-    const numA = els.btnPlusA.querySelector('.num');
-    const numB = els.btnPlusB.querySelector('.num');
+    const ui = {
+      numA: els.cardA.querySelector('.num'),
+      numB: els.cardB.querySelector('.num'),
+    };
 
-    // ===== Storage =====
-    const KEYS = { A:'sA_v3', B:'sB_v3', H:'sH_v3' }; // Key updated
+    // ===== State & Storage =====
     const store = {
-      getNum: (k) => Number(localStorage.getItem(k) ?? 0),
-      set: (k, v) => localStorage.setItem(k, v),
-      del: (k) => localStorage.removeItem(k),
-      getJSON: (k) => { try{ return JSON.parse(localStorage.getItem(k))??[]; }catch{return[];} },
-      setJSON: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+      get: (k) => JSON.parse(localStorage.getItem(k)) || 0,
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+      del: (k) => localStorage.removeItem(k)
+    };
+    let state = {
+      a: store.get('scA'),
+      b: store.get('scB'),
+      hist: store.get('scHist') || []
     };
 
-    // ===== State =====
-    let scoreA = store.getNum(KEYS.A);
-    let scoreB = store.getNum(KEYS.B);
-    let history = store.getJSON(KEYS.H);
+    // ===== Logic =====
+    const render = () => {
+      ui.numA.textContent = state.a;
+      ui.numB.textContent = state.b;
+      els.history.innerHTML = state.hist.slice(-HISTORY_MAX)
+        .map(h => `<div class="line">${h.a}-${h.b}</div>`).join('');
+    };
+    const vib = (ptn) => navigator.vibrate?.(ptn);
+    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA':'scB', v); render(); };
 
-    // ===== Utils =====
-    const vib = (ms) => navigator.vibrate?.(ms);
-    const inc = (v) => (v >= MAX) ? 0 : (v + 1);
-    const dec = (v) => (v <= 0) ? 0 : (v - 1);
+    // ===== Events =====
+    const bindCard = (card, key) => {
+      const plus = card.querySelector('.btn-plus');
+      const minus = card.querySelector('.btn-minus');
+      let timer, holding = false;
 
-    function render(){
-      numA.textContent = scoreA;
-      numB.textContent = scoreB;
-      els.history.innerHTML = history.slice(-HISTORY_MAX)
-        .map(x => `<div class="line">${x.a}-${x.b}</div>`).join('');
-    }
-
-    function setScore(side, v){
-      if(side === 'A'){ scoreA = v; store.set(KEYS.A, v); }
-      else { scoreB = v; store.set(KEYS.B, v); }
-      render();
-    }
-
-    // ===== Event Binding =====
-    // Plus Button (Click to INC, Long-press to 0)
-    function bindPlus(btn, side){
-      let timer, longPressed = false;
-      const clear = () => { if(timer){ clearTimeout(timer); timer=null;} };
-
-      btn.onpointerdown = () => {
-        longPressed = false; clear();
-        timer = setTimeout(()=>{
-          longPressed = true; setScore(side, 0); vib(60);
-        }, MS_SCORE_RESET);
-      }
-      btn.onpointerup = () => {
-        clear();
-        if(!longPressed){
-          setScore(side, inc(side==='A'?scoreA:scoreB)); vib(15);
+      // Plus Logic (Click=Inc, Hold=0)
+      plus.onpointerdown = (e) => {
+        holding = false; clearTimeout(timer);
+        timer = setTimeout(() => {
+          holding = true; update(key, 0); vib(60);
+        }, MS_RESET);
+      };
+      plus.onpointerup = (e) => {
+        clearTimeout(timer);
+        if(!holding) {
+          const n = state[key] >= MAX ? 0 : state[key] + 1;
+          update(key, n); vib(15);
         }
-      }
-      btn.onpointercancel = clear; btn.onpointerleave = clear;
-    }
+      };
+      plus.onpointercancel = () => clearTimeout(timer);
 
-    // Minus Button (Simple Click)
-    function bindMinus(btn, side){
-      btn.onclick = () => {
-        setScore(side, dec(side==='A'?scoreA:scoreB)); vib(30);
-      }
-    }
+      // Minus Logic
+      minus.onclick = () => {
+        const n = state[key] <= 0 ? 0 : state[key] - 1;
+        update(key, n); vib(30);
+      };
+    };
 
-    // Action Buttons (Long-press only)
-    function bindAction(btn, ms, action){
-      let timer, fired = false;
-      const clear = () => { if(timer) clearTimeout(timer); };
+    const bindAction = (btn, fn) => {
+      let timer;
       btn.onpointerdown = () => {
-        fired = false; clear();
-        timer = setTimeout(()=>{ fired=true; action(); }, ms);
-      }
-      btn.onpointerup = () => { clear(); if(!fired) vib(10); } // hint vibration
-      btn.onpointercancel = clear; btn.onpointerleave = clear;
-    }
+        timer = setTimeout(() => { fn(); }, MS_RESET);
+      };
+      btn.onpointerup = () => {
+        if(timer) { clearTimeout(timer); vib(5); } // Cancel hint
+      };
+      btn.onpointercancel = () => clearTimeout(timer);
+    };
 
-    // Setup Events
-    bindPlus(els.btnPlusA, 'A'); bindPlus(els.btnPlusB, 'B');
-    bindMinus(els.btnMinusA, 'A'); bindMinus(els.btnMinusB, 'B');
+    // Setup
+    bindCard(els.cardA, 'a');
+    bindCard(els.cardB, 'b');
 
-    bindAction(els.nextSetBtn, MS_NEXT_SET, () => {
-      if(scoreA===0 && scoreB===0) return vib(10);
-      history.push({a:scoreA, b:scoreB}); store.setJSON(KEYS.H, history);
-      setScore('A',0); setScore('B',0); vib([50,30,50]);
+    bindAction(els.next, () => {
+      if(state.a===0 && state.b===0) return vib(10);
+      state.hist.push({a:state.a, b:state.b});
+      store.set('scHist', state.hist);
+      state.a=0; state.b=0; 
+      store.set('scA',0); store.set('scB',0);
+      render(); vib([40,40]);
     });
-    bindAction(els.fullResetBtn, MS_FULL_RESET, () => {
-      scoreA=0; scoreB=0; history=[];
-      store.del(KEYS.A); store.del(KEYS.B); store.del(KEYS.H);
+
+    bindAction(els.reset, () => {
+      localStorage.clear();
+      state = {a:0, b:0, hist:[]};
       render(); vib(200);
     });
 
     // Wake Lock
-    (async()=>{ try{ if('wakeLock' in navigator) await navigator.wakeLock.request('screen'); }catch{} })();
-
-    // Init
+    (async()=>{try{if('wakeLock' in navigator) await navigator.wakeLock.request('screen');}catch{}})();
+    
     render();
   </script>
 </body>
