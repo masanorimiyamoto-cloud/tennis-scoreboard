@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="ja">
 <head>
@@ -109,11 +110,7 @@
       font-weight: 800;
       opacity: .75;
     }
-
-    /* 全消しボタンは少し目立たせすぎない */
-    .btn.danger{
-      opacity: .62;
-    }
+    .btn.danger{ opacity: .62; }
 
     .row{
       display: grid;
@@ -232,94 +229,95 @@
   </div>
 
   <script>
+    // ===== Config =====
     const MAX = 6;
-    const LONG_PRESS_MS = 600;        // スコア長押しリセット（片側）
-    const NEXT_SET_LONG_MS = 650;     // 次セット
-    const FULL_RESET_LONG_MS = 1200;  // ★全消し（誤爆防止で長め）
-    const HISTORY_MAX_LINES = 5;
+    const MS_SCORE_RESET = 600;   // スコア長押し（片側）リセット
+    const MS_NEXT_SET   = 650;   // 次セット
+    const MS_FULL_RESET = 1200;  // 全消し（誤爆防止）
+    const HISTORY_MAX   = 5;
 
+    // ===== DOM =====
+    const $ = (sel, root=document) => root.querySelector(sel);
     const els = {
-      a: document.getElementById('a'),
-      b: document.getElementById('b'),
-      history: document.getElementById('history'),
-      nextSetBtn: document.getElementById('nextSetBtn'),
-      fullResetBtn: document.getElementById('fullResetBtn')
+      a: $('#a'),
+      b: $('#b'),
+      history: $('#history'),
+      nextSetBtn: $('#nextSetBtn'),
+      fullResetBtn: $('#fullResetBtn'),
     };
-    const numA = els.a.querySelector('.num');
-    const numB = els.b.querySelector('.num');
+    const numA = $('.num', els.a);
+    const numB = $('.num', els.b);
 
-    const load = (k) => localStorage.getItem(k);
-    const save = (k, v) => localStorage.setItem(k, String(v));
-    const del = (k) => localStorage.removeItem(k);
-    const loadNum = (k) => Number(load(k) ?? 0);
+    // ===== Storage =====
+    const KEYS = { A:'scoreA', B:'scoreB', H:'setHistory' };
+    const store = {
+      getNum: (k, def=0) => Number(localStorage.getItem(k) ?? def),
+      set: (k, v) => localStorage.setItem(k, String(v)),
+      del: (k) => localStorage.removeItem(k),
+      getJSON: (k, def) => {
+        try{
+          const raw = localStorage.getItem(k);
+          if(!raw) return def;
+          const v = JSON.parse(raw);
+          return v ?? def;
+        }catch{
+          return def;
+        }
+      },
+      setJSON: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+    };
 
-    let scoreA = loadNum('scoreA');
-    let scoreB = loadNum('scoreB');
+    // ===== State =====
+    let scoreA = store.getNum(KEYS.A, 0);
+    let scoreB = store.getNum(KEYS.B, 0);
+    let history = store.getJSON(KEYS.H, []);
+    if(!Array.isArray(history)) history = [];
 
-    function loadHistory(){
-      try{
-        const raw = load('setHistory');
-        if(!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr : [];
-      }catch{
-        return [];
-      }
-    }
-    function saveHistory(arr){
-      save('setHistory', JSON.stringify(arr));
-    }
-    let setHistory = loadHistory();
-
-    function inc(v){ return (v >= MAX) ? 0 : (v + 1); }
-    function dec(v){ return (v <= 0) ? 0 : (v - 1); }
+    // ===== Utils =====
+    const vib = (ms) => navigator.vibrate?.(ms);
+    const inc = (v) => (v >= MAX) ? 0 : (v + 1);
+    const dec = (v) => (v <= 0) ? 0 : (v - 1);
+    const isMinus = (e) => e?.target?.classList?.contains('minus');
 
     function render(){
       numA.textContent = scoreA;
       numB.textContent = scoreB;
-      renderHistory();
+
+      const lines = history.slice(-HISTORY_MAX).map(x => `${x.a}-${x.b}`);
+      els.history.innerHTML = lines.map(t => `<div class="line">${t}</div>`).join('');
     }
 
-    function renderHistory(){
-      const lines = setHistory.slice(-HISTORY_MAX_LINES);
-      els.history.innerHTML = lines.map((x) => {
-        const label = `${x.n}set ${x.a}-${x.b}`;
-        return `<div class="line">${label}</div>`;
-      }).join('');
+    function setScore(which, v){
+      if(which === 'A'){ scoreA = v; store.set(KEYS.A, v); }
+      else { scoreB = v; store.set(KEYS.B, v); }
+      render();
     }
 
-    function isMinusTarget(e){
-      return !!(e.target && e.target.classList && e.target.classList.contains('minus'));
-    }
-
-    function bindScoreButton(btn, get, set, key){
+    // ===== Score buttons =====
+    function bindScore(btn, which){
       let timer = null;
       let longPressed = false;
 
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
       btn.addEventListener('pointerdown', (e) => {
-        if(isMinusTarget(e)) return;
+        if(isMinus(e)) return;
         e.preventDefault?.();
         longPressed = false;
         clear();
         timer = setTimeout(() => {
           longPressed = true;
-          set(0);
-          save(key, 0);
-          render();
-          navigator.vibrate?.(20);
-        }, LONG_PRESS_MS);
+          setScore(which, 0);
+          vib(20);
+        }, MS_SCORE_RESET);
       });
 
       btn.addEventListener('pointerup', (e) => {
         clear();
-        if(isMinusTarget(e)) return;
+        if(isMinus(e)) return;
         if(!longPressed){
-          const v = inc(get());
-          set(v);
-          save(key, v);
-          render();
+          const cur = (which === 'A') ? scoreA : scoreB;
+          setScore(which, inc(cur));
         }
       });
 
@@ -327,103 +325,86 @@
       btn.addEventListener('pointerleave', clear);
     }
 
-    bindScoreButton(els.a, () => scoreA, (v)=>{ scoreA = v; }, 'scoreA');
-    bindScoreButton(els.b, () => scoreB, (v)=>{ scoreB = v; }, 'scoreB');
+    function bindMinus(minusEl, which){
+      const onDown = (e) => {
+        e.preventDefault?.();
+        e.stopPropagation();
+        const cur = (which === 'A') ? scoreA : scoreB;
+        setScore(which, dec(cur));
+        vib(10);
+      };
+      const stop = (e) => { e.preventDefault?.(); e.stopPropagation(); };
 
-    function bindMinus(minusEl, get, set, key){
-      minusEl.addEventListener('pointerdown', (e)=>{
-        e.preventDefault?.();
-        e.stopPropagation();
-        const v = dec(get());
-        set(v);
-        save(key, v);
-        render();
-        navigator.vibrate?.(10);
-      });
-      minusEl.addEventListener('pointerup', (e)=>{
-        e.preventDefault?.();
-        e.stopPropagation();
-      });
-      minusEl.addEventListener('pointercancel', (e)=>{
-        e.preventDefault?.();
-        e.stopPropagation();
-      });
+      minusEl.addEventListener('pointerdown', onDown);
+      minusEl.addEventListener('pointerup', stop);
+      minusEl.addEventListener('pointercancel', stop);
     }
 
-    bindMinus(els.a.querySelector('.minus'), ()=>scoreA, (v)=>{ scoreA = v; }, 'scoreA');
-    bindMinus(els.b.querySelector('.minus'), ()=>scoreB, (v)=>{ scoreB = v; }, 'scoreB');
+    bindScore(els.a, 'A');
+    bindScore(els.b, 'B');
+    bindMinus($('.minus', els.a), 'A');
+    bindMinus($('.minus', els.b), 'B');
 
+    // ===== Set history + reset =====
     function pushCurrentSetAndReset(){
-      if(scoreA === 0 && scoreB === 0){
-        navigator.vibrate?.(8);
-        return;
-      }
-      const n = setHistory.length + 1;
-      setHistory.push({ n, a: scoreA, b: scoreB });
-      saveHistory(setHistory);
+      if(scoreA === 0 && scoreB === 0){ vib(8); return; }
+
+      history.push({ a: scoreA, b: scoreB });
+      store.setJSON(KEYS.H, history);
 
       scoreA = 0; scoreB = 0;
-      save('scoreA', 0);
-      save('scoreB', 0);
+      store.set(KEYS.A, 0);
+      store.set(KEYS.B, 0);
 
       render();
-      navigator.vibrate?.(25);
+      vib(25);
     }
 
     function fullResetAll(){
-      scoreA = 0; scoreB = 0;
-      setHistory = [];
-
-      // localStorageも全消し（このアプリが使うキーだけ）
-      del('scoreA');
-      del('scoreB');
-      del('setHistory');
-
+      scoreA = 0; scoreB = 0; history = [];
+      store.del(KEYS.A); store.del(KEYS.B); store.del(KEYS.H);
       render();
-      navigator.vibrate?.(35);
+      vib(35);
     }
 
-    function bindLongPressButton(btn, ms, onFire){
+    // ===== Long-press buttons =====
+    function bindLongPress(btn, ms, onFire){
       let timer = null;
       let fired = false;
 
       const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
 
-      btn.addEventListener('pointerdown', (e)=>{
+      btn.addEventListener('pointerdown', (e) => {
         e.preventDefault?.();
         fired = false;
         clear();
-        timer = setTimeout(()=>{
-          fired = true;
-          onFire();
-        }, ms);
+        timer = setTimeout(() => { fired = true; onFire(); }, ms);
       });
 
-      btn.addEventListener('pointerup', (e)=>{
+      btn.addEventListener('pointerup', (e) => {
         e.preventDefault?.();
         clear();
-        if(!fired) navigator.vibrate?.(6);
+        if(!fired) vib(6);
       });
 
       btn.addEventListener('pointercancel', clear);
       btn.addEventListener('pointerleave', clear);
     }
 
-    bindLongPressButton(els.nextSetBtn, NEXT_SET_LONG_MS, pushCurrentSetAndReset);
-    bindLongPressButton(els.fullResetBtn, FULL_RESET_LONG_MS, fullResetAll);
+    bindLongPress(els.nextSetBtn, MS_NEXT_SET, pushCurrentSetAndReset);
+    bindLongPress(els.fullResetBtn, MS_FULL_RESET, fullResetAll);
 
-    // Wake Lock
+    // ===== Wake Lock =====
     let wakeLock = null;
     async function requestWakeLock(){
       try{
         if(!('wakeLock' in navigator)) return;
         wakeLock = await navigator.wakeLock.request('screen');
         wakeLock.addEventListener('release', () => { wakeLock = null; });
-      }catch(e){
+      }catch{
         wakeLock = null;
       }
     }
-
     document.addEventListener('visibilitychange', () => {
       if(document.visibilityState === 'visible') requestWakeLock();
       else wakeLock = null;
@@ -434,3 +415,4 @@
   </script>
 </body>
 </html>
+```
