@@ -7,22 +7,22 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
       --bg1: #050810;
-      --bg2: #0f1525;
       --accent: #00f2ff; /* Cyber Cyan */
+      --danger: #ff3355; /* Neon Red */
       --glass: rgba(255, 255, 255, 0.05);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --text-glow: 0 0 20px rgba(0, 242, 255, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.15);
     }
 
     html, body {
       height: 100%;
       margin: 0;
-      background: radial-gradient(circle at 50% -20%, #1a2a4f 0%, var(--bg1) 60%), var(--bg1);
+      /* 背景を少し落ち着かせ、スコアを見やすく */
+      background: radial-gradient(circle at 50% -30%, #112240 0%, #03050a 70%);
       color: #fff;
       font-family: 'Chakra Petch', sans-serif;
       touch-action: manipulation;
@@ -34,371 +34,253 @@
     .wrap{
       height: 100%;
       display: grid;
-      place-items: center;
+      grid-template-rows: auto 1fr;
       padding: env(safe-area-inset-top) 16px 20px 16px;
       box-sizing: border-box;
-      position: relative;
+      gap: 10px;
     }
 
-    /* HUD (Top Bar) */
+    /* === HUD (Top Bar) === */
     .hud{
-      position: absolute;
-      top: env(safe-area-inset-top);
-      left: 0;
-      right: 0;
-      padding: 12px 16px;
       display: flex;
       gap: 12px;
       align-items: flex-start;
       justify-content: space-between;
-      pointer-events: none;
       z-index: 10;
     }
 
-    /* History Pills */
     .history{
-      pointer-events: none;
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
-      max-width: 65%;
+      flex: 1;
     }
     .history .line{
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent);
-      padding: 4px 10px;
-      border-radius: 4px;
+      font-size: 16px; font-weight: 700; color: var(--accent);
+      padding: 4px 10px; border-radius: 4px;
       background: rgba(0, 242, 255, 0.1);
       border: 1px solid rgba(0, 242, 255, 0.2);
-      box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
-      letter-spacing: 1px;
     }
 
-    /* Action Buttons */
     .actions{
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
+      display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
     }
 
-    .btn{
-      appearance: none;
-      border: 1px solid var(--glass-border);
-      background: var(--glass);
-      color: rgba(255,255,255,0.8);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 8px 14px;
-      border-radius: 8px;
-      backdrop-filter: blur(10px);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.2s ease;
+    .btn-act{
+      appearance: none; border: 1px solid var(--glass-border);
+      background: var(--glass); color: rgba(255,255,255,0.8);
+      font-family: inherit; font-size: 12px; font-weight: 700;
+      padding: 8px 12px; border-radius: 6px; cursor: pointer;
+      transition: all 0.1s;
     }
-    .btn:active{
-      background: rgba(255,255,255,0.15);
-      transform: scale(0.96);
-    }
-    .btn.next{ border-color: rgba(0,242,255,0.3); color: var(--accent); }
-    .btn .hint{ font-size: 9px; opacity: 0.6; display: block; text-align: right; margin-top: 2px;}
+    .btn-act:active{ background: rgba(255,255,255,0.2); transform: scale(0.96); }
+    .btn-act.next{ border-color: rgba(0,242,255,0.4); color: var(--accent); }
+    .btn-act .hint{ font-size: 9px; opacity: 0.6; font-weight: 500; margin-left: 4px; }
 
-    /* Main Score Area */
+    /* === Main Score Area === */
     .row{
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      width: 100%;
-      height: 100%;
-      max-height: 80vh;
-      align-content: center;
+      gap: 12px;
+      width: 100%; height: 100%;
     }
 
-    button.score{
+    /* スコアカード全体 */
+    .score-card{
       position: relative;
-      appearance: none;
+      display: grid;
+      grid-template-rows: 1fr auto; /* 上が巨大、下がボタン */
       border: 1px solid var(--glass-border);
-      background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
-      border-radius: 24px;
-      box-shadow: 
-        0 20px 50px -10px rgba(0,0,0,0.5),
-        inset 0 1px 1px rgba(255,255,255,0.15);
-      color: #fff;
-      padding: 0;
+      background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.2) 100%);
+      border-radius: 20px;
       overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
     }
 
-    /* Active State (The Juice) */
-    button.score:active{
-      transform: scale(0.97);
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6);
-      border-color: rgba(255,255,255,0.2);
+    /* プラスボタン領域（数字部分） */
+    .btn-plus{
+      appearance: none; border: none; background: transparent;
+      color: #fff; padding: 0; margin: 0; width: 100%; height: 100%;
+      cursor: pointer; display: grid; place-items: center;
+      /* タップ時のフィードバック */
+      transition: background 0.1s, transform 0.1s;
     }
-    /* Flashing effect on score change */
-    button.score.flash {
-      background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    .btn-plus:active{
+      background: rgba(255,255,255,0.05);
+      transform: scale(0.98);
     }
 
-    button.score .num{
-      font-size: clamp(120px, 35vw, 400px);
-      font-weight: 600;
+    .num{
+      font-size: clamp(120px, 36vw, 450px);
+      font-weight: 700;
       line-height: 1;
-      text-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      z-index: 2;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.5);
       font-variant-numeric: tabular-nums;
     }
 
-    /* Minus Button - Subtle */
-    button.score .minus{
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 20%;
-      min-height: 80px;
-      background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding-bottom: 20px;
-      font-size: 32px;
-      color: rgba(255,255,255,0.4);
-      opacity: 0; /* Hidden by default */
-      transition: opacity 0.2s;
+    /* 明確なマイナスボタン */
+    .btn-minus{
+      appearance: none;
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.2); /* 少し暗くして区別 */
+      color: rgba(255,255,255,0.6);
+      font-family: inherit;
+      font-size: 32px; font-weight: 500;
+      padding: 12px 0; /* タップしやすい高さ */
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.1s;
     }
-    button.score .minus:active { color: #fff; background: rgba(255, 50, 50, 0.2); }
-    
-    /* Show minus hint on hover/touch if needed, currently kept invisible for clean look 
-       but clickable area is there */
-    button.score:active .minus { opacity: 1; } 
-
-    /* Decoration Lines */
-    .deco-line{
-      position: absolute;
-      top: 20px;
-      width: 40px;
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 4px;
+    .btn-minus:active{
+      background: rgba(255, 50, 50, 0.3); /* タップ時に赤く光る */
+      color: #fff;
     }
 
-    @media (max-width: 500px){
-      .row{ gap: 10px; max-height: 85vh; }
-      button.score{ border-radius: 20px; }
-      .history .line{ font-size: 15px; }
-    }
+    @media (max-width: 500px){ .row{ gap: 8px; } .score-card{ border-radius: 16px; } }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="hud">
-      <div class="history" id="history"></div>
-      
+      <div class="history" id="history" aria-label="セット履歴"></div>
       <div class="actions">
-        <button class="btn next" id="nextSetBtn">
-          NEXT SET <span class="hint">HOLD</span>
-        </button>
-        <button class="btn" id="fullResetBtn">
-          RESET <span class="hint">HOLD</span>
-        </button>
+        <button class="btn-act next" id="nextSetBtn">NEXT SET<span class="hint">長押し</span></button>
+        <button class="btn-act" id="fullResetBtn">RESET<span class="hint">長押し</span></button>
       </div>
     </div>
 
     <div class="row">
-      <button class="score" id="a">
-        <div class="deco-line"></div>
-        <span class="num">0</span>
-        <div class="minus" role="button">−</div>
-      </button>
+      <div class="score-card" id="cardA">
+        <button class="btn-plus" id="btnPlusA" aria-label="左を加算（長押しで0）">
+          <span class="num">0</span>
+        </button>
+        <button class="btn-minus" id="btnMinusA" aria-label="左を減算">−</button>
+      </div>
 
-      <button class="score" id="b">
-        <div class="deco-line"></div>
-        <span class="num">0</span>
-        <div class="minus" role="button">−</div>
-      </button>
+      <div class="score-card" id="cardB">
+        <button class="btn-plus" id="btnPlusB" aria-label="右を加算（長押しで0）">
+          <span class="num">0</span>
+        </button>
+        <button class="btn-minus" id="btnMinusB" aria-label="右を減算">−</button>
+      </div>
     </div>
   </div>
 
   <script>
     // ===== Config =====
-    const MAX = 7; // タイブレーク考慮で7に変更
+    const MAX = 7; 
     const MS_SCORE_RESET = 800;  
     const MS_NEXT_SET   = 650;  
     const MS_FULL_RESET = 1200; 
-    const HISTORY_MAX   = 5;
+    const HISTORY_MAX   = 6;
 
     // ===== DOM =====
-    const $ = (sel, root=document) => root.querySelector(sel);
+    const $ = (id) => document.getElementById(id);
     const els = {
-      a: $('#a'),
-      b: $('#b'),
-      history: $('#history'),
-      nextSetBtn: $('#nextSetBtn'),
-      fullResetBtn: $('#fullResetBtn'),
+      cardA: $('cardA'), cardB: $('cardB'),
+      btnPlusA: $('btnPlusA'), btnPlusB: $('btnPlusB'),
+      btnMinusA: $('btnMinusA'), btnMinusB: $('btnMinusB'),
+      history: $('history'),
+      nextSetBtn: $('nextSetBtn'), fullResetBtn: $('fullResetBtn'),
     };
-    const numA = $('.num', els.a);
-    const numB = $('.num', els.b);
+    const numA = els.btnPlusA.querySelector('.num');
+    const numB = els.btnPlusB.querySelector('.num');
 
     // ===== Storage =====
-    const KEYS = { A:'scoreA_v2', B:'scoreB_v2', H:'setHistory_v2' }; // Key updated for v2
+    const KEYS = { A:'sA_v3', B:'sB_v3', H:'sH_v3' }; // Key updated
     const store = {
-      getNum: (k, def=0) => Number(localStorage.getItem(k) ?? def),
-      set: (k, v) => localStorage.setItem(k, String(v)),
+      getNum: (k) => Number(localStorage.getItem(k) ?? 0),
+      set: (k, v) => localStorage.setItem(k, v),
       del: (k) => localStorage.removeItem(k),
-      getJSON: (k, def) => {
-        try{ return JSON.parse(localStorage.getItem(k)) ?? def; }
-        catch{ return def; }
-      },
+      getJSON: (k) => { try{ return JSON.parse(localStorage.getItem(k))??[]; }catch{return[];} },
       setJSON: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
 
     // ===== State =====
-    let scoreA = store.getNum(KEYS.A, 0);
-    let scoreB = store.getNum(KEYS.B, 0);
-    let history = store.getJSON(KEYS.H, []);
+    let scoreA = store.getNum(KEYS.A);
+    let scoreB = store.getNum(KEYS.B);
+    let history = store.getJSON(KEYS.H);
 
     // ===== Utils =====
     const vib = (ms) => navigator.vibrate?.(ms);
     const inc = (v) => (v >= MAX) ? 0 : (v + 1);
     const dec = (v) => (v <= 0) ? 0 : (v - 1);
-    const isMinus = (e) => e.target.classList.contains('minus');
 
     function render(){
       numA.textContent = scoreA;
       numB.textContent = scoreB;
-      
-      // Colorize logic: Leader gets cyber accent color? Optional. 
-      // Keeping it white for clarity, but history gets color.
-
-      const lines = history.slice(-HISTORY_MAX).map(x => `${x.a}-${x.b}`);
-      els.history.innerHTML = lines.map(t => `<div class="line">${t}</div>`).join('');
+      els.history.innerHTML = history.slice(-HISTORY_MAX)
+        .map(x => `<div class="line">${x.a}-${x.b}</div>`).join('');
     }
 
-    function setScore(which, v){
-      if(which === 'A'){ scoreA = v; store.set(KEYS.A, v); }
+    function setScore(side, v){
+      if(side === 'A'){ scoreA = v; store.set(KEYS.A, v); }
       else { scoreB = v; store.set(KEYS.B, v); }
       render();
     }
 
-    function flashBtn(btn){
-      btn.classList.add('flash');
-      setTimeout(()=> btn.classList.remove('flash'), 150);
-    }
+    // ===== Event Binding =====
+    // Plus Button (Click to INC, Long-press to 0)
+    function bindPlus(btn, side){
+      let timer, longPressed = false;
+      const clear = () => { if(timer){ clearTimeout(timer); timer=null;} };
 
-    // ===== Score buttons =====
-    function bindScore(btn, which){
-      let timer = null;
-      let longPressed = false;
-
-      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
-
-      btn.addEventListener('pointerdown', (e) => {
-        if(isMinus(e)) return;
-        // e.preventDefault(); // allow scroll/zoom if needed, but mostly prevent for app feel
-        longPressed = false;
-        clear();
-        timer = setTimeout(() => {
-          longPressed = true;
-          setScore(which, 0);
-          vib(50);
-          flashBtn(btn);
+      btn.onpointerdown = () => {
+        longPressed = false; clear();
+        timer = setTimeout(()=>{
+          longPressed = true; setScore(side, 0); vib(60);
         }, MS_SCORE_RESET);
-      });
-
-      btn.addEventListener('pointerup', (e) => {
+      }
+      btn.onpointerup = () => {
         clear();
-        if(isMinus(e)) return;
         if(!longPressed){
-          const cur = (which === 'A') ? scoreA : scoreB;
-          setScore(which, inc(cur));
-          vib(10);
-          flashBtn(btn); // Visual Feedback
+          setScore(side, inc(side==='A'?scoreA:scoreB)); vib(15);
         }
-      });
-      
-      btn.addEventListener('pointercancel', clear);
-      btn.addEventListener('pointerleave', clear);
+      }
+      btn.onpointercancel = clear; btn.onpointerleave = clear;
     }
 
-    function bindMinus(btn, which){
-      const minusEl = btn.querySelector('.minus');
-      minusEl.addEventListener('pointerdown', (e) => {
-        e.stopPropagation(); // prevent parent click
-        const cur = (which === 'A') ? scoreA : scoreB;
-        setScore(which, dec(cur));
-        vib(20);
-      });
+    // Minus Button (Simple Click)
+    function bindMinus(btn, side){
+      btn.onclick = () => {
+        setScore(side, dec(side==='A'?scoreA:scoreB)); vib(30);
+      }
     }
 
-    bindScore(els.a, 'A');
-    bindScore(els.b, 'B');
-    bindMinus(els.a, 'A');
-    bindMinus(els.b, 'B');
-
-    // ===== Action Buttons =====
-    function pushCurrentSetAndReset(){
-      if(scoreA === 0 && scoreB === 0){ vib(10); return; }
-      history.push({ a: scoreA, b: scoreB });
-      store.setJSON(KEYS.H, history);
-      scoreA = 0; scoreB = 0;
-      store.set(KEYS.A, 0); store.set(KEYS.B, 0);
-      render();
-      vib([30, 50, 30]); // Distinct pattern
+    // Action Buttons (Long-press only)
+    function bindAction(btn, ms, action){
+      let timer, fired = false;
+      const clear = () => { if(timer) clearTimeout(timer); };
+      btn.onpointerdown = () => {
+        fired = false; clear();
+        timer = setTimeout(()=>{ fired=true; action(); }, ms);
+      }
+      btn.onpointerup = () => { clear(); if(!fired) vib(10); } // hint vibration
+      btn.onpointercancel = clear; btn.onpointerleave = clear;
     }
 
-    function fullResetAll(){
-      scoreA = 0; scoreB = 0; history = [];
+    // Setup Events
+    bindPlus(els.btnPlusA, 'A'); bindPlus(els.btnPlusB, 'B');
+    bindMinus(els.btnMinusA, 'A'); bindMinus(els.btnMinusB, 'B');
+
+    bindAction(els.nextSetBtn, MS_NEXT_SET, () => {
+      if(scoreA===0 && scoreB===0) return vib(10);
+      history.push({a:scoreA, b:scoreB}); store.setJSON(KEYS.H, history);
+      setScore('A',0); setScore('B',0); vib([50,30,50]);
+    });
+    bindAction(els.fullResetBtn, MS_FULL_RESET, () => {
+      scoreA=0; scoreB=0; history=[];
       store.del(KEYS.A); store.del(KEYS.B); store.del(KEYS.H);
-      render();
-      vib(100);
-    }
-
-    function bindLongPress(btn, ms, onFire){
-      let timer = null;
-      let fired = false;
-      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
-
-      btn.addEventListener('pointerdown', (e) => {
-        fired = false;
-        clear();
-        btn.style.transform = "scale(0.92)"; // press effect
-        timer = setTimeout(() => { fired = true; onFire(); btn.style.transform = ""; }, ms);
-      });
-
-      btn.addEventListener('pointerup', (e) => {
-        clear();
-        btn.style.transform = ""; 
-        if(!fired) vib(5);
-      });
-      btn.addEventListener('pointercancel', clear);
-      btn.addEventListener('pointerleave', clear);
-    }
-
-    bindLongPress(els.nextSetBtn, MS_NEXT_SET, pushCurrentSetAndReset);
-    bindLongPress(els.fullResetBtn, MS_FULL_RESET, fullResetAll);
-
-    // ===== Wake Lock =====
-    let wakeLock = null;
-    const requestWakeLock = async () => {
-      try { if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch{}
-    };
-    document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState === 'visible') requestWakeLock();
+      render(); vib(200);
     });
 
+    // Wake Lock
+    (async()=>{ try{ if('wakeLock' in navigator) await navigator.wakeLock.request('screen'); }catch{} })();
+
+    // Init
     render();
-    requestWakeLock();
   </script>
 </body>
 </html>
