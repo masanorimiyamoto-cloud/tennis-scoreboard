@@ -49,20 +49,19 @@
       justify-content: space-between;
       z-index: 10;
       background: rgba(0,0,0,0.3);
-      padding: 10px 16px; /* 余白を拡大 */
+      padding: 10px 16px;
       border-radius: 14px;
       border: 1px solid var(--glass-border);
     }
 
-    /* 履歴 (20%サイズアップ) */
     .history{
       display: flex; gap: 8px; overflow-x: auto; max-width: 55%;
       scrollbar-width: none;
     }
     .history .line{
-      font-size: 18px; /* 14px -> 18px */
+      font-size: 18px;
       font-weight: 700; color: var(--accent);
-      padding: 4px 12px; /* 拡大 */
+      padding: 4px 12px;
       border-radius: 6px;
       background: rgba(0, 242, 255, 0.12); border: 1px solid rgba(0, 242, 255, 0.3);
       white-space: nowrap;
@@ -71,13 +70,12 @@
 
     .actions{ display: flex; gap: 10px; }
     
-    /* NEXT/RESETボタン (20%サイズアップ) */
     .btn-act{
       border: 1px solid var(--glass-border); background: var(--glass);
       color: rgba(255,255,255,0.9); 
-      font-size: 14px; /* 11px -> 14px */
+      font-size: 14px;
       font-weight: 700;
-      padding: 10px 16px; /* 6px -> 10px */
+      padding: 10px 16px;
       border-radius: 8px; cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -103,6 +101,33 @@
       overflow: hidden;
     }
 
+    /* --- プレーヤー名ラベル --- */
+    .player-label {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      white-space: nowrap;
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-label:active {
+      background: var(--accent);
+      color: #000;
+    }
+
     .btn-plus{
       flex: 1; border: none; background: transparent; color: #fff;
       display: grid; place-items: center; width: 100%; cursor: pointer;
@@ -118,7 +143,7 @@
     }
 
     .btn-minus{
-      flex: 0 0 50px; /* 44px -> 50px */
+      flex: 0 0 50px;
       border: none; border-top: 1px solid rgba(255,255,255,0.1);
       background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4);
       font-size: 28px; font-weight: 700; cursor: pointer;
@@ -133,7 +158,7 @@
       .hud{
         flex-direction: column;
         justify-content: space-between;
-        width: 85px; /* ボタンサイズアップに合わせて幅を拡大 */
+        width: 85px;
         order: 2;
         padding: 12px 6px;
       }
@@ -145,14 +170,14 @@
       
       .actions{ flex-direction: column; width: 100%; gap: 10px; }
       .btn-act{ font-size: 13px; padding: 12px 2px; width: 100%; }
-      .btn-act span { display: none; }
 
       .row{ display: contents; }
       .score-card{ flex: 1; min-width: 0; }
       #cardA{ order: 1; }
       #cardB{ order: 3; }
       .num{ font-size: 55vh; } 
-      .btn-minus { flex: 0 0 44px; } /* 横画面では少し抑えて高さを確保 */
+      .btn-minus { flex: 0 0 44px; }
+      .player-label { top: 6px; font-size: 11px; padding: 1px 8px; }
     }
   </style>
 </head>
@@ -169,10 +194,12 @@
 
     <div class="row">
       <div class="score-card" id="cardA">
+        <div class="player-label" id="labelA" onclick="editName('a')">M & I</div>
         <button class="btn-plus" id="btnPlusA"><span class="num">0</span></button>
         <button class="btn-minus" id="btnMinusA">−</button>
       </div>
       <div class="score-card" id="cardB">
+        <div class="player-label" id="labelB" onclick="editName('b')">OPPONENT</div>
         <button class="btn-plus" id="btnPlusB"><span class="num">0</span></button>
         <button class="btn-minus" id="btnMinusB">−</button>
       </div>
@@ -180,45 +207,54 @@
   </div>
 
   <script>
-    // ===== Config =====
     const MAX = 7; 
     const MS_RESET = 800;
-    const HISTORY_MAX = 8; // 履歴を少し多めに表示可能に
+    const HISTORY_MAX = 8;
 
     const $ = (id) => document.getElementById(id);
-    const els = {
-      cardA: $('cardA'), cardB: $('cardB'),
-      history: $('history'),
-      next: $('nextSetBtn'), reset: $('fullResetBtn'),
-    };
-    const ui = {
-      numA: els.cardA.querySelector('.num'),
-      numB: els.cardB.querySelector('.num'),
-    };
-
     const store = {
-      get: (k) => JSON.parse(localStorage.getItem(k)) || 0,
-      set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+      get: (k, def) => {
+        const val = localStorage.getItem(k);
+        return val ? JSON.parse(val) : def;
+      },
+      set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
 
     let state = {
-      a: store.get('scA_v5'),
-      b: store.get('scB_v5'),
-      hist: store.get('scHist_v5') || []
+      a: store.get('scA_v6', 0),
+      b: store.get('scB_v6', 0),
+      nameA: store.get('nameA_v6', 'M & I'),
+      nameB: store.get('nameB_v6', 'OPPONENT'),
+      hist: store.get('scHist_v6', [])
     };
 
     const render = () => {
-      ui.numA.textContent = state.a;
-      ui.numB.textContent = state.b;
-      els.history.innerHTML = state.hist.slice(-HISTORY_MAX)
+      $('cardA').querySelector('.num').textContent = state.a;
+      $('cardB').querySelector('.num').textContent = state.b;
+      $('labelA').textContent = state.nameA;
+      $('labelB').textContent = state.nameB;
+      $('history').innerHTML = state.hist.slice(-HISTORY_MAX)
         .map(h => `<div class="line">${h.a}-${h.b}</div>`).join('');
-      // 自動スクロール（横画面用）
-      els.history.scrollTop = els.history.scrollHeight;
+      $('history').scrollTop = $('history').scrollHeight;
     };
+
+    // --- 名前編集機能 ---
+    window.editName = (side) => {
+      const current = side === 'a' ? state.nameA : state.nameB;
+      const newName = prompt("プレーヤー/ペア名を入力してください", current);
+      if (newName !== null && newName.trim() !== "") {
+        const key = side === 'a' ? 'nameA' : 'nameB';
+        state[key] = newName.toUpperCase();
+        store.set(key + '_v6', state[key]);
+        render();
+        vib(15);
+      }
+    };
+
     const vib = (ptn) => navigator.vibrate?.(ptn);
     const update = (k, v) => { 
       state[k] = v; 
-      store.set(k==='a'?'scA_v5':'scB_v5', v); 
+      store.set(k==='a'?'scA_v6':'scB_v6', v); 
       render(); 
     };
 
@@ -240,8 +276,6 @@
           update(key, n); vib(15);
         }
       };
-      plus.onpointercancel = () => clearTimeout(timer);
-
       minus.onclick = () => {
         const n = state[key] <= 0 ? 0 : state[key] - 1;
         update(key, n); vib(30);
@@ -253,32 +287,28 @@
       btn.onpointerdown = () => {
         timer = setTimeout(() => { fn(); }, MS_RESET);
       };
-      btn.onpointerup = () => {
-        if(timer) { clearTimeout(timer); vib(5); }
-      };
-      btn.onpointercancel = () => clearTimeout(timer);
+      btn.onpointerup = () => { if(timer) { clearTimeout(timer); vib(5); } };
     };
 
-    bindCard(els.cardA, 'a');
-    bindCard(els.cardB, 'b');
+    bindCard($('cardA'), 'a');
+    bindCard($('cardB'), 'b');
 
-    bindAction(els.next, () => {
+    bindAction($('nextSetBtn'), () => {
       if(state.a===0 && state.b===0) return vib(10);
       state.hist.push({a:state.a, b:state.b});
-      store.set('scHist_v5', state.hist);
+      store.set('scHist_v6', state.hist);
       state.a=0; state.b=0; 
-      store.set('scA_v5',0); store.set('scB_v5',0);
+      store.set('scA_v6',0); store.set('scB_v6',0);
       render(); vib([40,40,40]);
     });
 
-    bindAction(els.reset, () => {
+    bindAction($('fullResetBtn'), () => {
       localStorage.clear();
-      state = {a:0, b:0, hist:[]};
+      state = {a:0, b:0, nameA:'M & I', nameB:'OPPONENT', hist:[]};
       render(); vib(200);
     });
 
     (async()=>{try{if('wakeLock' in navigator) await navigator.wakeLock.request('screen');}catch{}})();
-    
     render();
   </script>
 </body>
