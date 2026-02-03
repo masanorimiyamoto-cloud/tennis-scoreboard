@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <title>Tennis Score Board</title>
+  <title>Tennis Score Board Pro</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,170 +14,99 @@
       --bg1: #050810;
       --accent: #00f2ff;
       --danger: #ff3355;
+      --warning: #ffcc00;
       --glass: rgba(255, 255, 255, 0.08);
       --glass-border: rgba(255, 255, 255, 0.15);
     }
 
     html, body {
-      height: 100dvh;
-      margin: 0;
+      height: 100dvh; margin: 0;
       background: radial-gradient(circle at 50% 50%, #152036 0%, #03050a 90%);
-      color: #fff;
-      font-family: 'Chakra Petch', sans-serif;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-      overflow: hidden;
+      color: #fff; font-family: 'Chakra Petch', sans-serif;
+      touch-action: manipulation; -webkit-user-select: none; user-select: none; overflow: hidden;
     }
 
     .wrap{
-      height: 100%;
-      width: 100%;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 12px;
+      height: 100%; width: 100%; box-sizing: border-box;
+      display: flex; flex-direction: column; gap: 8px; padding: 12px;
     }
 
-    /* === HUD (操作パネル) === */
+    /* === HUD (操作パネル) 修正版 === */
     .hud{
-      flex: 0 0 auto;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 10;
-      background: rgba(0,0,0,0.3);
-      padding: 10px 16px;
-      border-radius: 14px;
-      border: 1px solid var(--glass-border);
+      flex: 0 0 auto; display: flex; gap: 10px; align-items: center;
+      z-index: 10; background: rgba(0,0,0,0.4); padding: 8px 12px;
+      border-radius: 14px; border: 1px solid var(--glass-border);
+      overflow-x: auto; /* はみ出してもスクロール可能に */
     }
 
     .history{
-      display: flex; gap: 8px; overflow-x: auto; max-width: 55%;
-      scrollbar-width: none;
+      flex: 1; display: flex; gap: 6px; overflow-x: auto;
+      scrollbar-width: none; min-width: 0;
     }
     .history .line{
-      font-size: 18px;
-      font-weight: 700; color: var(--accent);
-      padding: 4px 12px;
-      border-radius: 6px;
-      background: rgba(0, 242, 255, 0.12); border: 1px solid rgba(0, 242, 255, 0.3);
+      font-size: 16px; font-weight: 700; color: var(--accent); padding: 4px 10px;
+      border-radius: 6px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
       white-space: nowrap;
-      letter-spacing: 1px;
     }
 
-    .actions{ display: flex; gap: 10px; }
+    .actions{ display: flex; gap: 6px; flex-shrink: 0; }
     
     .btn-act{
       border: 1px solid var(--glass-border); background: var(--glass);
-      color: rgba(255,255,255,0.9); 
-      font-size: 14px;
-      font-weight: 700;
-      padding: 10px 16px;
-      border-radius: 8px; cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer; text-transform: uppercase;
+      white-space: nowrap;
     }
     .btn-act:active{ transform: scale(0.92); background: rgba(255,255,255,0.2); }
     .btn-act.next{ color: var(--accent); border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
+    .btn-act.log{ color: var(--warning); border-color: var(--warning); background: rgba(255, 204, 0, 0.05); }
 
     /* === Main Score Area === */
-    .row{
-      flex: 1; min-height: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
+    .row{ flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .score-card{
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--glass-border);
-      background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
-      border-radius: 18px;
-      overflow: hidden;
+      position: relative; display: flex; flex-direction: column;
+      border: 1px solid var(--glass-border); background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
+      border-radius: 18px; overflow: hidden;
     }
 
-    /* --- プレーヤー名ラベル --- */
     .player-label {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 5;
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.5);
-      background: rgba(0, 0, 0, 0.3);
-      padding: 2px 12px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      white-space: nowrap;
-      max-width: 80%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .player-label:active {
-      background: var(--accent);
-      color: #000;
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
+      font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.4);
+      padding: 2px 10px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);
+      text-transform: uppercase; letter-spacing: 1px; cursor: pointer; white-space: nowrap; max-width: 80%; overflow: hidden; text-overflow: ellipsis;
     }
 
-    .btn-plus{
-      flex: 1; border: none; background: transparent; color: #fff;
-      display: grid; place-items: center; width: 100%; cursor: pointer;
-    }
-    .btn-plus:active{ background: rgba(255,255,255,0.05); }
+    .btn-plus{ flex: 1; border: none; background: transparent; color: #fff; display: grid; place-items: center; width: 100%; cursor: pointer; }
+    .num{ font-size: 35vmin; font-weight: 700; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.6); font-variant-numeric: tabular-nums; }
+    .btn-minus{ flex: 0 0 50px; border: none; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4); font-size: 24px; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
 
-    .num{
-      font-size: 40vmin; 
-      font-weight: 700; line-height: 1;
-      text-shadow: 0 5px 20px rgba(0,0,0,0.6);
-      font-variant-numeric: tabular-nums;
-      transition: transform 0.1s;
+    /* === Log Modal (アーカイブ表示) === */
+    #logOverlay {
+      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.95); backdrop-filter: blur(15px);
+      z-index: 100; display: none; flex-direction: column; padding: 20px;
     }
+    #logOverlay.active { display: flex; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+    .log-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .log-item { background: var(--glass); border: 1px solid var(--glass-border); padding: 14px; border-radius: 12px; }
+    .log-date { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .log-players { font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+    .log-sets { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+    .btn-close { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; }
+    .btn-clear-archive { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-top: 20px; align-self: center; }
 
-    .btn-minus{
-      flex: 0 0 50px;
-      border: none; border-top: 1px solid rgba(255,255,255,0.1);
-      background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4);
-      font-size: 28px; font-weight: 700; cursor: pointer;
-      display: grid; place-items: center;
-    }
-    .btn-minus:active{ background: rgba(255, 50, 50, 0.4); color: #fff; }
-
-    /* ========== 横画面 (Landscape) モード最適化 ========== */
     @media (orientation: landscape) and (max-height: 600px) {
       .wrap{ flex-direction: row; padding: 8px; gap: 8px; }
-      
-      .hud{
-        flex-direction: column;
-        justify-content: space-between;
-        width: 85px;
-        order: 2;
-        padding: 12px 6px;
-      }
-      .history{
-        flex-direction: column; overflow-y: auto; overflow-x: hidden;
-        max-height: 50%; max-width: 100%; gap: 6px;
-      }
-      .history .line { font-size: 16px; padding: 6px 4px; text-align: center; }
-      
-      .actions{ flex-direction: column; width: 100%; gap: 10px; }
-      .btn-act{ font-size: 13px; padding: 12px 2px; width: 100%; }
-
+      .hud{ flex-direction: column; width: 80px; order: 2; padding: 8px 4px; overflow-y: auto; overflow-x: hidden; }
+      .history{ flex-direction: column; max-height: 35%; width: 100%; }
+      .history .line { font-size: 14px; padding: 4px 2px; text-align: center; }
+      .actions{ flex-direction: column; width: 100%; }
+      .btn-act{ font-size: 10px; padding: 10px 2px; width: 100%; text-align: center; }
       .row{ display: contents; }
       .score-card{ flex: 1; min-width: 0; }
       #cardA{ order: 1; }
       #cardB{ order: 3; }
       .num{ font-size: 55vh; } 
-      .btn-minus { flex: 0 0 44px; }
-      .player-label { top: 6px; font-size: 11px; padding: 1px 8px; }
     }
   </style>
 </head>
@@ -188,6 +117,7 @@
       <div class="history" id="history"></div>
       <div class="actions">
         <button class="btn-act next" id="nextSetBtn">NEXT</button>
+        <button class="btn-act log" id="openLogBtn">LOG</button>
         <button class="btn-act" id="fullResetBtn">RESET</button>
       </div>
     </div>
@@ -206,26 +136,30 @@
     </div>
   </div>
 
-  <script>
-    const MAX = 7; 
-    const MS_RESET = 800;
-    const HISTORY_MAX = 8;
+  <div id="logOverlay">
+    <div class="log-header">
+      <div style="font-size: 18px; font-weight: 700; color: var(--accent);">MATCH ARCHIVE</div>
+      <button class="btn-close" id="closeLogBtn">CLOSE</button>
+    </div>
+    <div class="log-content" id="logContent"></div>
+    <button class="btn-clear-archive" id="clearArchiveBtn">CLEAR ALL ARCHIVES</button>
+  </div>
 
+  <script>
+    const MAX = 7, MS_RESET = 800, HISTORY_MAX = 8;
     const $ = (id) => document.getElementById(id);
     const store = {
-      get: (k, def) => {
-        const val = localStorage.getItem(k);
-        return val ? JSON.parse(val) : def;
-      },
+      get: (k, def) => { const val = localStorage.getItem(k); return val ? JSON.parse(val) : def; },
       set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
 
     let state = {
-      a: store.get('scA_v6', 0),
-      b: store.get('scB_v6', 0),
-      nameA: store.get('nameA_v6', 'M & I'),
-      nameB: store.get('nameB_v6', 'OPPONENT'),
-      hist: store.get('scHist_v6', [])
+      a: store.get('scA_v8', 0),
+      b: store.get('scB_v8', 0),
+      nameA: store.get('nameA_v8', 'M & I'),
+      nameB: store.get('nameB_v8', 'OPPONENT'),
+      hist: store.get('scHist_v8', []),
+      archives: store.get('scArch_v8', [])
     };
 
     const render = () => {
@@ -235,79 +169,86 @@
       $('labelB').textContent = state.nameB;
       $('history').innerHTML = state.hist.slice(-HISTORY_MAX)
         .map(h => `<div class="line">${h.a}-${h.b}</div>`).join('');
-      $('history').scrollTop = $('history').scrollHeight;
+      $('history').scrollLeft = $('history').scrollWidth;
     };
 
-    // --- 名前編集機能 ---
+    const renderArchives = () => {
+      const content = $('logContent');
+      if (state.archives.length === 0) {
+        content.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; margin-top:40px;">No match records yet.</div>';
+        return;
+      }
+      content.innerHTML = state.archives.slice().reverse().map(m => `
+        <div class="log-item">
+          <div class="log-date">${m.date}</div>
+          <div class="log-players">${m.nameA} vs ${m.nameB}</div>
+          <div class="log-sets">${m.sets.map(s => `${s.a}-${s.b}`).join(' / ')}</div>
+        </div>
+      `).join('');
+    };
+
     window.editName = (side) => {
       const current = side === 'a' ? state.nameA : state.nameB;
-      const newName = prompt("プレーヤー/ペア名を入力してください", current);
-      if (newName !== null && newName.trim() !== "") {
-        const key = side === 'a' ? 'nameA' : 'nameB';
-        state[key] = newName.toUpperCase();
-        store.set(key + '_v6', state[key]);
+      const newName = prompt("名前を入力", current);
+      if (newName) {
+        state[side === 'a' ? 'nameA' : 'nameB'] = newName.toUpperCase();
+        store.set(side === 'a' ? 'nameA_v8' : 'nameB_v8', state[side === 'a' ? 'nameA' : 'nameB']);
         render();
-        vib(15);
       }
     };
 
     const vib = (ptn) => navigator.vibrate?.(ptn);
-    const update = (k, v) => { 
-      state[k] = v; 
-      store.set(k==='a'?'scA_v6':'scB_v6', v); 
-      render(); 
-    };
+    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA_v8':'scB_v8', v); render(); };
 
     const bindCard = (card, key) => {
-      const plus = card.querySelector('.btn-plus');
-      const minus = card.querySelector('.btn-minus');
+      const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
       let timer, holding = false;
-
-      plus.onpointerdown = (e) => {
-        holding = false; clearTimeout(timer);
-        timer = setTimeout(() => {
-          holding = true; update(key, 0); vib(60);
-        }, MS_RESET);
+      plus.onpointerdown = () => {
+        holding = false; timer = setTimeout(() => { holding = true; update(key, 0); vib(60); }, MS_RESET);
       };
-      plus.onpointerup = (e) => {
+      plus.onpointerup = () => {
         clearTimeout(timer);
-        if(!holding) {
-          const n = state[key] >= MAX ? 0 : state[key] + 1;
-          update(key, n); vib(15);
-        }
+        if(!holding) { update(key, state[key] >= MAX ? 0 : state[key] + 1); vib(15); }
       };
-      minus.onclick = () => {
-        const n = state[key] <= 0 ? 0 : state[key] - 1;
-        update(key, n); vib(30);
-      };
+      minus.onclick = () => { update(key, state[key] <= 0 ? 0 : state[key] - 1); vib(30); };
     };
 
     const bindAction = (btn, fn) => {
       let timer;
-      btn.onpointerdown = () => {
-        timer = setTimeout(() => { fn(); }, MS_RESET);
-      };
+      btn.onpointerdown = () => { timer = setTimeout(fn, MS_RESET); };
       btn.onpointerup = () => { if(timer) { clearTimeout(timer); vib(5); } };
     };
 
-    bindCard($('cardA'), 'a');
-    bindCard($('cardB'), 'b');
-
     bindAction($('nextSetBtn'), () => {
-      if(state.a===0 && state.b===0) return vib(10);
+      if(state.a===0 && state.b===0) return;
       state.hist.push({a:state.a, b:state.b});
-      store.set('scHist_v6', state.hist);
-      state.a=0; state.b=0; 
-      store.set('scA_v6',0); store.set('scB_v6',0);
-      render(); vib([40,40,40]);
+      store.set('scHist_v8', state.hist);
+      update('a',0); update('b',0); vib([40,40,40]);
     });
 
     bindAction($('fullResetBtn'), () => {
-      localStorage.clear();
-      state = {a:0, b:0, nameA:'M & I', nameB:'OPPONENT', hist:[]};
+      if(state.hist.length > 0 || state.a > 0 || state.b > 0) {
+        const currentSets = [...state.hist];
+        if(state.a > 0 || state.b > 0) currentSets.push({a:state.a, b:state.b});
+        state.archives.push({
+          date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
+          nameA: state.nameA, nameB: state.nameB, sets: currentSets
+        });
+        store.set('scArch_v8', state.archives);
+      }
+      state.a = 0; state.b = 0; state.hist = [];
+      store.set('scA_v8', 0); store.set('scB_v8', 0); store.set('scHist_v8', []);
       render(); vib(200);
+      alert("Saved to Log & Reset.");
     });
 
+    $('openLogBtn').onclick = () => { renderArchives(); $('logOverlay').classList.add('active'); vib(10); };
+    $('closeLogBtn').onclick = () => { $('logOverlay').classList.remove('active'); vib(5); };
+    $('clearArchiveBtn').onclick = () => {
+      if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v8', []); renderArchives(); }
+    };
+
+    bindCard($('cardA'), 'a'); bindCard($('cardB'), 'b');
     (async()=>{try{if('wakeLock' in navigator) await navigator.wakeLock.request('screen');}catch{}})();
     render();
   </script>
