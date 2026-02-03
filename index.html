@@ -15,6 +15,7 @@
       --accent: #00f2ff;
       --danger: #ff3355;
       --warning: #ffcc00;
+      --share: #4cd964;
       --glass: rgba(255, 255, 255, 0.08);
       --glass-border: rgba(255, 255, 255, 0.15);
     }
@@ -31,12 +32,11 @@
       display: flex; flex-direction: column; gap: 8px; padding: 12px;
     }
 
-    /* === HUD (操作パネル) 修正版 === */
     .hud{
       flex: 0 0 auto; display: flex; gap: 10px; align-items: center;
       z-index: 10; background: rgba(0,0,0,0.4); padding: 8px 12px;
       border-radius: 14px; border: 1px solid var(--glass-border);
-      overflow-x: auto; /* はみ出してもスクロール可能に */
+      overflow-x: auto;
     }
 
     .history{
@@ -61,7 +61,6 @@
     .btn-act.next{ color: var(--accent); border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
     .btn-act.log{ color: var(--warning); border-color: var(--warning); background: rgba(255, 204, 0, 0.05); }
 
-    /* === Main Score Area === */
     .row{ flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .score-card{
       position: relative; display: flex; flex-direction: column;
@@ -80,7 +79,7 @@
     .num{ font-size: 35vmin; font-weight: 700; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.6); font-variant-numeric: tabular-nums; }
     .btn-minus{ flex: 0 0 50px; border: none; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4); font-size: 24px; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
 
-    /* === Log Modal (アーカイブ表示) === */
+    /* === Log Modal === */
     #logOverlay {
       position: fixed; inset: 0; background: rgba(5, 8, 16, 0.95); backdrop-filter: blur(15px);
       z-index: 100; display: none; flex-direction: column; padding: 20px;
@@ -88,10 +87,24 @@
     #logOverlay.active { display: flex; }
     .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
     .log-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-    .log-item { background: var(--glass); border: 1px solid var(--glass-border); padding: 14px; border-radius: 12px; }
+    
+    /* Log Item with Share */
+    .log-item { 
+      background: var(--glass); border: 1px solid var(--glass-border); 
+      padding: 14px; border-radius: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .log-info { flex: 1; }
     .log-date { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
     .log-players { font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
     .log-sets { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+    
+    .btn-share {
+      background: rgba(76, 217, 100, 0.1); border: 1px solid var(--share); color: var(--share);
+      padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-share:active { background: var(--share); color: #000; }
+
     .btn-close { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; }
     .btn-clear-archive { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-top: 20px; align-self: center; }
 
@@ -99,9 +112,8 @@
       .wrap{ flex-direction: row; padding: 8px; gap: 8px; }
       .hud{ flex-direction: column; width: 80px; order: 2; padding: 8px 4px; overflow-y: auto; overflow-x: hidden; }
       .history{ flex-direction: column; max-height: 35%; width: 100%; }
-      .history .line { font-size: 14px; padding: 4px 2px; text-align: center; }
       .actions{ flex-direction: column; width: 100%; }
-      .btn-act{ font-size: 10px; padding: 10px 2px; width: 100%; text-align: center; }
+      .btn-act{ font-size: 10px; padding: 10px 2px; width: 100%; }
       .row{ display: contents; }
       .score-card{ flex: 1; min-width: 0; }
       #cardA{ order: 1; }
@@ -154,12 +166,12 @@
     };
 
     let state = {
-      a: store.get('scA_v8', 0),
-      b: store.get('scB_v8', 0),
-      nameA: store.get('nameA_v8', 'M & I'),
-      nameB: store.get('nameB_v8', 'OPPONENT'),
-      hist: store.get('scHist_v8', []),
-      archives: store.get('scArch_v8', [])
+      a: store.get('scA_v9', 0),
+      b: store.get('scB_v9', 0),
+      nameA: store.get('nameA_v9', 'M & I'),
+      nameB: store.get('nameB_v9', 'OPPONENT'),
+      hist: store.get('scHist_v9', []),
+      archives: store.get('scArch_v9', [])
     };
 
     const render = () => {
@@ -172,19 +184,40 @@
       $('history').scrollLeft = $('history').scrollWidth;
     };
 
+    // --- シェア機能の実装 ---
+    const shareMatch = async (index) => {
+      const m = state.archives[index];
+      const setScores = m.sets.map(s => `${s.a}-${s.b}`).join(' / ');
+      const text = `【Tennis Match Result】\n${m.date}\n${m.nameA} vs ${m.nameB}\nScore: ${setScores}\n#TennisScoreBoard`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Match Result', text: text });
+        } catch (err) { console.log("Share failed", err); }
+      } else {
+        // Share API非対応（PCブラウザ等）の場合はクリップボードへコピー
+        navigator.clipboard.writeText(text);
+        alert("Copied to clipboard!");
+      }
+    };
+
     const renderArchives = () => {
       const content = $('logContent');
       if (state.archives.length === 0) {
         content.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; margin-top:40px;">No match records yet.</div>';
         return;
       }
-      content.innerHTML = state.archives.slice().reverse().map(m => `
+      // 逆順で表示（最新が上）
+      content.innerHTML = state.archives.map((m, idx) => `
         <div class="log-item">
-          <div class="log-date">${m.date}</div>
-          <div class="log-players">${m.nameA} vs ${m.nameB}</div>
-          <div class="log-sets">${m.sets.map(s => `${s.a}-${s.b}`).join(' / ')}</div>
+          <div class="log-info">
+            <div class="log-date">${m.date}</div>
+            <div class="log-players">${m.nameA} vs ${m.nameB}</div>
+            <div class="log-sets">${m.sets.map(s => `${s.a}-${s.b}`).join(' / ')}</div>
+          </div>
+          <button class="btn-share" onclick="shareMatch(${idx})">SHARE</button>
         </div>
-      `).join('');
+      `).reverse().join('');
     };
 
     window.editName = (side) => {
@@ -192,13 +225,13 @@
       const newName = prompt("名前を入力", current);
       if (newName) {
         state[side === 'a' ? 'nameA' : 'nameB'] = newName.toUpperCase();
-        store.set(side === 'a' ? 'nameA_v8' : 'nameB_v8', state[side === 'a' ? 'nameA' : 'nameB']);
+        store.set(side === 'a' ? 'nameA_v9' : 'nameB_v9', state[side === 'a' ? 'nameA' : 'nameB']);
         render();
       }
     };
 
     const vib = (ptn) => navigator.vibrate?.(ptn);
-    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA_v8':'scB_v8', v); render(); };
+    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); };
 
     const bindCard = (card, key) => {
       const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
@@ -222,7 +255,7 @@
     bindAction($('nextSetBtn'), () => {
       if(state.a===0 && state.b===0) return;
       state.hist.push({a:state.a, b:state.b});
-      store.set('scHist_v8', state.hist);
+      store.set('scHist_v9', state.hist);
       update('a',0); update('b',0); vib([40,40,40]);
     });
 
@@ -234,18 +267,18 @@
           date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
           nameA: state.nameA, nameB: state.nameB, sets: currentSets
         });
-        store.set('scArch_v8', state.archives);
+        store.set('scArch_v9', state.archives);
       }
       state.a = 0; state.b = 0; state.hist = [];
-      store.set('scA_v8', 0); store.set('scB_v8', 0); store.set('scHist_v8', []);
+      store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
       render(); vib(200);
-      alert("Saved to Log & Reset.");
+      alert("Saved & Reset. Open LOG to share.");
     });
 
     $('openLogBtn').onclick = () => { renderArchives(); $('logOverlay').classList.add('active'); vib(10); };
     $('closeLogBtn').onclick = () => { $('logOverlay').classList.remove('active'); vib(5); };
     $('clearArchiveBtn').onclick = () => {
-      if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v8', []); renderArchives(); }
+      if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v9', []); renderArchives(); }
     };
 
     bindCard($('cardA'), 'a'); bindCard($('cardB'), 'b');
