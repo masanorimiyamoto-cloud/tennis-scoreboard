@@ -3,199 +3,122 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <title>Tennis Score (0-7)</title>
+  <title>Tennis Score Board Pro</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
       --bg1: #050810;
-      --bg2: #0f1525;
-      --accent: #00f2ff; /* Cyber Cyan */
-      --glass: rgba(255, 255, 255, 0.05);
-      --glass-border: rgba(255, 255, 255, 0.1);
-      --text-glow: 0 0 20px rgba(0, 242, 255, 0.4);
+      --accent: #00f2ff;
+      --danger: #ff3355;
+      --warning: #ffcc00;
+      --share: #4cd964;
+      --glass: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.15);
     }
 
     html, body {
-      height: 100%;
-      margin: 0;
-      background: radial-gradient(circle at 50% -20%, #1a2a4f 0%, var(--bg1) 60%), var(--bg1);
-      color: #fff;
-      font-family: 'Chakra Petch', sans-serif;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-      overflow: hidden;
+      height: 100dvh; margin: 0;
+      background: radial-gradient(circle at 50% 50%, #152036 0%, #03050a 90%);
+      color: #fff; font-family: 'Chakra Petch', sans-serif;
+      touch-action: manipulation; -webkit-user-select: none; user-select: none; overflow: hidden;
     }
 
     .wrap{
-      height: 100%;
-      display: grid;
-      place-items: center;
-      padding: env(safe-area-inset-top) 16px 20px 16px;
-      box-sizing: border-box;
-      position: relative;
+      height: 100%; width: 100%; box-sizing: border-box;
+      display: flex; flex-direction: column; gap: 8px; padding: 12px;
     }
 
-    /* HUD (Top Bar) */
     .hud{
-      position: absolute;
-      top: env(safe-area-inset-top);
-      left: 0;
-      right: 0;
-      padding: 12px 16px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      justify-content: space-between;
-      pointer-events: none;
-      z-index: 10;
+      flex: 0 0 auto; display: flex; gap: 10px; align-items: center;
+      z-index: 10; background: rgba(0,0,0,0.4); padding: 8px 12px;
+      border-radius: 14px; border: 1px solid var(--glass-border);
+      overflow-x: auto;
     }
 
-    /* History Pills */
     .history{
-      pointer-events: none;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      max-width: 65%;
+      flex: 1; display: flex; gap: 6px; overflow-x: auto;
+      scrollbar-width: none; min-width: 0;
     }
     .history .line{
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent);
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: rgba(0, 242, 255, 0.1);
-      border: 1px solid rgba(0, 242, 255, 0.2);
-      box-shadow: 0 0 10px rgba(0, 242, 255, 0.05);
-      letter-spacing: 1px;
+      font-size: 16px; font-weight: 700; color: var(--accent); padding: 4px 10px;
+      border-radius: 6px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
+      white-space: nowrap;
     }
 
-    /* Action Buttons */
-    .actions{
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
-    }
-
-    .btn{
-      appearance: none;
-      border: 1px solid var(--glass-border);
-      background: var(--glass);
-      color: rgba(255,255,255,0.8);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 8px 14px;
-      border-radius: 8px;
-      backdrop-filter: blur(10px);
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      transition: all 0.2s ease;
-    }
-    .btn:active{
-      background: rgba(255,255,255,0.15);
-      transform: scale(0.96);
-    }
-    .btn.next{ border-color: rgba(0,242,255,0.3); color: var(--accent); }
-    .btn .hint{ font-size: 9px; opacity: 0.6; display: block; text-align: right; margin-top: 2px;}
-
-    /* Main Score Area */
-    .row{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      width: 100%;
-      height: 100%;
-      max-height: 80vh;
-      align-content: center;
-    }
-
-    button.score{
-      position: relative;
-      appearance: none;
-      border: 1px solid var(--glass-border);
-      background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
-      border-radius: 24px;
-      box-shadow: 
-        0 20px 50px -10px rgba(0,0,0,0.5),
-        inset 0 1px 1px rgba(255,255,255,0.15);
-      color: #fff;
-      padding: 0;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
-    }
-
-    /* Active State (The Juice) */
-    button.score:active{
-      transform: scale(0.97);
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6);
-      border-color: rgba(255,255,255,0.2);
-    }
-    /* Flashing effect on score change */
-    button.score.flash {
-      background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
-    }
-
-    button.score .num{
-      font-size: clamp(120px, 35vw, 400px);
-      font-weight: 600;
-      line-height: 1;
-      text-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      z-index: 2;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Minus Button - Subtle */
-    button.score .minus{
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 20%;
-      min-height: 80px;
-      background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding-bottom: 20px;
-      font-size: 32px;
-      color: rgba(255,255,255,0.4);
-      opacity: 0; /* Hidden by default */
-      transition: opacity 0.2s;
-    }
-    button.score .minus:active { color: #fff; background: rgba(255, 50, 50, 0.2); }
+    .actions{ display: flex; gap: 6px; flex-shrink: 0; }
     
-    /* Show minus hint on hover/touch if needed, currently kept invisible for clean look 
-       but clickable area is there */
-    button.score:active .minus { opacity: 1; } 
+    .btn-act{
+      border: 1px solid var(--glass-border); background: var(--glass);
+      color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .btn-act:active{ transform: scale(0.92); background: rgba(255,255,255,0.2); }
+    .btn-act.next{ color: var(--accent); border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
+    .btn-act.log{ color: var(--warning); border-color: var(--warning); background: rgba(255, 204, 0, 0.05); }
 
-    /* Decoration Lines */
-    .deco-line{
-      position: absolute;
-      top: 20px;
-      width: 40px;
-      height: 4px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 4px;
+    .row{ flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .score-card{
+      position: relative; display: flex; flex-direction: column;
+      border: 1px solid var(--glass-border); background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
+      border-radius: 18px; overflow: hidden;
     }
 
-    @media (max-width: 500px){
-      .row{ gap: 10px; max-height: 85vh; }
-      button.score{ border-radius: 20px; }
-      .history .line{ font-size: 15px; }
+    .player-label {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
+      font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.4);
+      padding: 2px 10px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);
+      text-transform: uppercase; letter-spacing: 1px; cursor: pointer; white-space: nowrap; max-width: 80%; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .btn-plus{ flex: 1; border: none; background: transparent; color: #fff; display: grid; place-items: center; width: 100%; cursor: pointer; }
+    .num{ font-size: 35vmin; font-weight: 700; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.6); font-variant-numeric: tabular-nums; }
+    .btn-minus{ flex: 0 0 50px; border: none; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4); font-size: 24px; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
+
+    /* === Log Modal === */
+    #logOverlay {
+      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.95); backdrop-filter: blur(15px);
+      z-index: 100; display: none; flex-direction: column; padding: 20px;
+    }
+    #logOverlay.active { display: flex; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+    .log-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    
+    /* Log Item with Share */
+    .log-item { 
+      background: var(--glass); border: 1px solid var(--glass-border); 
+      padding: 14px; border-radius: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .log-info { flex: 1; }
+    .log-date { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+    .log-players { font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+    .log-sets { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+    
+    .btn-share {
+      background: rgba(76, 217, 100, 0.1); border: 1px solid var(--share); color: var(--share);
+      padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .btn-share:active { background: var(--share); color: #000; }
+
+    .btn-close { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; }
+    .btn-clear-archive { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-top: 20px; align-self: center; }
+
+    @media (orientation: landscape) and (max-height: 600px) {
+      .wrap{ flex-direction: row; padding: 8px; gap: 8px; }
+      .hud{ flex-direction: column; width: 80px; order: 2; padding: 8px 4px; overflow-y: auto; overflow-x: hidden; }
+      .history{ flex-direction: column; max-height: 35%; width: 100%; }
+      .actions{ flex-direction: column; width: 100%; }
+      .btn-act{ font-size: 10px; padding: 10px 2px; width: 100%; }
+      .row{ display: contents; }
+      .score-card{ flex: 1; min-width: 0; }
+      #cardA{ order: 1; }
+      #cardB{ order: 3; }
+      .num{ font-size: 55vh; } 
     }
   </style>
 </head>
@@ -204,201 +127,163 @@
   <div class="wrap">
     <div class="hud">
       <div class="history" id="history"></div>
-      
       <div class="actions">
-        <button class="btn next" id="nextSetBtn">
-          NEXT SET <span class="hint">HOLD</span>
-        </button>
-        <button class="btn" id="fullResetBtn">
-          RESET <span class="hint">HOLD</span>
-        </button>
+        <button class="btn-act next" id="nextSetBtn">NEXT</button>
+        <button class="btn-act log" id="openLogBtn">LOG</button>
+        <button class="btn-act" id="fullResetBtn">RESET</button>
       </div>
     </div>
 
     <div class="row">
-      <button class="score" id="a">
-        <div class="deco-line"></div>
-        <span class="num">0</span>
-        <div class="minus" role="button">−</div>
-      </button>
-
-      <button class="score" id="b">
-        <div class="deco-line"></div>
-        <span class="num">0</span>
-        <div class="minus" role="button">−</div>
-      </button>
+      <div class="score-card" id="cardA">
+        <div class="player-label" id="labelA" onclick="editName('a')">Players1</div>
+        <button class="btn-plus" id="btnPlusA"><span class="num">0</span></button>
+        <button class="btn-minus" id="btnMinusA">−</button>
+      </div>
+      <div class="score-card" id="cardB">
+        <div class="player-label" id="labelB" onclick="editName('b')">Players2</div>
+        <button class="btn-plus" id="btnPlusB"><span class="num">0</span></button>
+        <button class="btn-minus" id="btnMinusB">−</button>
+      </div>
     </div>
   </div>
 
+  <div id="logOverlay">
+    <div class="log-header">
+      <div style="font-size: 18px; font-weight: 700; color: var(--accent);">MATCH ARCHIVE</div>
+      <button class="btn-close" id="closeLogBtn">CLOSE</button>
+    </div>
+    <div class="log-content" id="logContent"></div>
+    <button class="btn-clear-archive" id="clearArchiveBtn">CLEAR ALL ARCHIVES</button>
+  </div>
+
   <script>
-    // ===== Config =====
-    const MAX = 7; // タイブレーク考慮で7に変更
-    const MS_SCORE_RESET = 800;  
-    const MS_NEXT_SET   = 650;  
-    const MS_FULL_RESET = 1200; 
-    const HISTORY_MAX   = 5;
-
-    // ===== DOM =====
-    const $ = (sel, root=document) => root.querySelector(sel);
-    const els = {
-      a: $('#a'),
-      b: $('#b'),
-      history: $('#history'),
-      nextSetBtn: $('#nextSetBtn'),
-      fullResetBtn: $('#fullResetBtn'),
-    };
-    const numA = $('.num', els.a);
-    const numB = $('.num', els.b);
-
-    // ===== Storage =====
-    const KEYS = { A:'scoreA_v2', B:'scoreB_v2', H:'setHistory_v2' }; // Key updated for v2
+    const MAX = 7, MS_RESET = 800, HISTORY_MAX = 8;
+    const $ = (id) => document.getElementById(id);
     const store = {
-      getNum: (k, def=0) => Number(localStorage.getItem(k) ?? def),
-      set: (k, v) => localStorage.setItem(k, String(v)),
-      del: (k) => localStorage.removeItem(k),
-      getJSON: (k, def) => {
-        try{ return JSON.parse(localStorage.getItem(k)) ?? def; }
-        catch{ return def; }
-      },
-      setJSON: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+      get: (k, def) => { const val = localStorage.getItem(k); return val ? JSON.parse(val) : def; },
+      set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
 
-    // ===== State =====
-    let scoreA = store.getNum(KEYS.A, 0);
-    let scoreB = store.getNum(KEYS.B, 0);
-    let history = store.getJSON(KEYS.H, []);
-
-    // ===== Utils =====
-    const vib = (ms) => navigator.vibrate?.(ms);
-    const inc = (v) => (v >= MAX) ? 0 : (v + 1);
-    const dec = (v) => (v <= 0) ? 0 : (v - 1);
-    const isMinus = (e) => e.target.classList.contains('minus');
-
-    function render(){
-      numA.textContent = scoreA;
-      numB.textContent = scoreB;
-      
-      // Colorize logic: Leader gets cyber accent color? Optional. 
-      // Keeping it white for clarity, but history gets color.
-
-      const lines = history.slice(-HISTORY_MAX).map(x => `${x.a}-${x.b}`);
-      els.history.innerHTML = lines.map(t => `<div class="line">${t}</div>`).join('');
-    }
-
-    function setScore(which, v){
-      if(which === 'A'){ scoreA = v; store.set(KEYS.A, v); }
-      else { scoreB = v; store.set(KEYS.B, v); }
-      render();
-    }
-
-    function flashBtn(btn){
-      btn.classList.add('flash');
-      setTimeout(()=> btn.classList.remove('flash'), 150);
-    }
-
-    // ===== Score buttons =====
-    function bindScore(btn, which){
-      let timer = null;
-      let longPressed = false;
-
-      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
-
-      btn.addEventListener('pointerdown', (e) => {
-        if(isMinus(e)) return;
-        // e.preventDefault(); // allow scroll/zoom if needed, but mostly prevent for app feel
-        longPressed = false;
-        clear();
-        timer = setTimeout(() => {
-          longPressed = true;
-          setScore(which, 0);
-          vib(50);
-          flashBtn(btn);
-        }, MS_SCORE_RESET);
-      });
-
-      btn.addEventListener('pointerup', (e) => {
-        clear();
-        if(isMinus(e)) return;
-        if(!longPressed){
-          const cur = (which === 'A') ? scoreA : scoreB;
-          setScore(which, inc(cur));
-          vib(10);
-          flashBtn(btn); // Visual Feedback
-        }
-      });
-      
-      btn.addEventListener('pointercancel', clear);
-      btn.addEventListener('pointerleave', clear);
-    }
-
-    function bindMinus(btn, which){
-      const minusEl = btn.querySelector('.minus');
-      minusEl.addEventListener('pointerdown', (e) => {
-        e.stopPropagation(); // prevent parent click
-        const cur = (which === 'A') ? scoreA : scoreB;
-        setScore(which, dec(cur));
-        vib(20);
-      });
-    }
-
-    bindScore(els.a, 'A');
-    bindScore(els.b, 'B');
-    bindMinus(els.a, 'A');
-    bindMinus(els.b, 'B');
-
-    // ===== Action Buttons =====
-    function pushCurrentSetAndReset(){
-      if(scoreA === 0 && scoreB === 0){ vib(10); return; }
-      history.push({ a: scoreA, b: scoreB });
-      store.setJSON(KEYS.H, history);
-      scoreA = 0; scoreB = 0;
-      store.set(KEYS.A, 0); store.set(KEYS.B, 0);
-      render();
-      vib([30, 50, 30]); // Distinct pattern
-    }
-
-    function fullResetAll(){
-      scoreA = 0; scoreB = 0; history = [];
-      store.del(KEYS.A); store.del(KEYS.B); store.del(KEYS.H);
-      render();
-      vib(100);
-    }
-
-    function bindLongPress(btn, ms, onFire){
-      let timer = null;
-      let fired = false;
-      const clear = () => { if(timer){ clearTimeout(timer); timer = null; } };
-
-      btn.addEventListener('pointerdown', (e) => {
-        fired = false;
-        clear();
-        btn.style.transform = "scale(0.92)"; // press effect
-        timer = setTimeout(() => { fired = true; onFire(); btn.style.transform = ""; }, ms);
-      });
-
-      btn.addEventListener('pointerup', (e) => {
-        clear();
-        btn.style.transform = ""; 
-        if(!fired) vib(5);
-      });
-      btn.addEventListener('pointercancel', clear);
-      btn.addEventListener('pointerleave', clear);
-    }
-
-    bindLongPress(els.nextSetBtn, MS_NEXT_SET, pushCurrentSetAndReset);
-    bindLongPress(els.fullResetBtn, MS_FULL_RESET, fullResetAll);
-
-    // ===== Wake Lock =====
-    let wakeLock = null;
-    const requestWakeLock = async () => {
-      try { if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch{}
+    let state = {
+      a: store.get('scA_v9', 0),
+      b: store.get('scB_v9', 0),
+      nameA: store.get('nameA_v9', 'Players1 & I'),
+      nameB: store.get('nameB_v9', 'Players2'),
+      hist: store.get('scHist_v9', []),
+      archives: store.get('scArch_v9', [])
     };
-    document.addEventListener('visibilitychange', () => {
-      if(document.visibilityState === 'visible') requestWakeLock();
+
+    const render = () => {
+      $('cardA').querySelector('.num').textContent = state.a;
+      $('cardB').querySelector('.num').textContent = state.b;
+      $('labelA').textContent = state.nameA;
+      $('labelB').textContent = state.nameB;
+      $('history').innerHTML = state.hist.slice(-HISTORY_MAX)
+        .map(h => `<div class="line">${h.a}-${h.b}</div>`).join('');
+      $('history').scrollLeft = $('history').scrollWidth;
+    };
+
+    // --- シェア機能の実装 ---
+    const shareMatch = async (index) => {
+      const m = state.archives[index];
+      const setScores = m.sets.map(s => `${s.a}-${s.b}`).join(' / ');
+      const text = `【Tennis Match Result】\n${m.date}\n${m.nameA} vs ${m.nameB}\nScore: ${setScores}\n#TennisScoreBoard`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Match Result', text: text });
+        } catch (err) { console.log("Share failed", err); }
+      } else {
+        // Share API非対応（PCブラウザ等）の場合はクリップボードへコピー
+        navigator.clipboard.writeText(text);
+        alert("Copied to clipboard!");
+      }
+    };
+
+    const renderArchives = () => {
+      const content = $('logContent');
+      if (state.archives.length === 0) {
+        content.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; margin-top:40px;">No match records yet.</div>';
+        return;
+      }
+      // 逆順で表示（最新が上）
+      content.innerHTML = state.archives.map((m, idx) => `
+        <div class="log-item">
+          <div class="log-info">
+            <div class="log-date">${m.date}</div>
+            <div class="log-players">${m.nameA} vs ${m.nameB}</div>
+            <div class="log-sets">${m.sets.map(s => `${s.a}-${s.b}`).join(' / ')}</div>
+          </div>
+          <button class="btn-share" onclick="shareMatch(${idx})">SHARE</button>
+        </div>
+      `).reverse().join('');
+    };
+
+    window.editName = (side) => {
+      const current = side === 'a' ? state.nameA : state.nameB;
+      const newName = prompt("名前を入力", current);
+      if (newName) {
+        state[side === 'a' ? 'nameA' : 'nameB'] = newName.toUpperCase();
+        store.set(side === 'a' ? 'nameA_v9' : 'nameB_v9', state[side === 'a' ? 'nameA' : 'nameB']);
+        render();
+      }
+    };
+
+    const vib = (ptn) => navigator.vibrate?.(ptn);
+    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); };
+
+    const bindCard = (card, key) => {
+      const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
+      let timer, holding = false;
+      plus.onpointerdown = () => {
+        holding = false; timer = setTimeout(() => { holding = true; update(key, 0); vib(60); }, MS_RESET);
+      };
+      plus.onpointerup = () => {
+        clearTimeout(timer);
+        if(!holding) { update(key, state[key] >= MAX ? 0 : state[key] + 1); vib(15); }
+      };
+      minus.onclick = () => { update(key, state[key] <= 0 ? 0 : state[key] - 1); vib(30); };
+    };
+
+    const bindAction = (btn, fn) => {
+      let timer;
+      btn.onpointerdown = () => { timer = setTimeout(fn, MS_RESET); };
+      btn.onpointerup = () => { if(timer) { clearTimeout(timer); vib(5); } };
+    };
+
+    bindAction($('nextSetBtn'), () => {
+      if(state.a===0 && state.b===0) return;
+      state.hist.push({a:state.a, b:state.b});
+      store.set('scHist_v9', state.hist);
+      update('a',0); update('b',0); vib([40,40,40]);
     });
 
+    bindAction($('fullResetBtn'), () => {
+      if(state.hist.length > 0 || state.a > 0 || state.b > 0) {
+        const currentSets = [...state.hist];
+        if(state.a > 0 || state.b > 0) currentSets.push({a:state.a, b:state.b});
+        state.archives.push({
+          date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
+          nameA: state.nameA, nameB: state.nameB, sets: currentSets
+        });
+        store.set('scArch_v9', state.archives);
+      }
+      state.a = 0; state.b = 0; state.hist = [];
+      store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
+      render(); vib(200);
+      alert("Saved & Reset. Open LOG to share.");
+    });
+
+    $('openLogBtn').onclick = () => { renderArchives(); $('logOverlay').classList.add('active'); vib(10); };
+    $('closeLogBtn').onclick = () => { $('logOverlay').classList.remove('active'); vib(5); };
+    $('clearArchiveBtn').onclick = () => {
+      if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v9', []); renderArchives(); }
+    };
+
+    bindCard($('cardA'), 'a'); bindCard($('cardB'), 'b');
+    (async()=>{try{if('wakeLock' in navigator) await navigator.wakeLock.request('screen');}catch{}})();
     render();
-    requestWakeLock();
   </script>
 </body>
 </html>
