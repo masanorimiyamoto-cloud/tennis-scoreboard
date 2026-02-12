@@ -245,25 +245,13 @@
       } catch (e) { console.log('speak error', e); }
     };
 
-    const tennisCall = (a, b) => {
-      const names = [state.nameA || 'Player A', state.nameB || 'Player B'];
-      // Advantage / Game / Deuce logic
-      if (a >= 4 || b >= 4) {
-        if (a === b) return 'Deuce';
-        if (a - b === 1) return `Advantage ${names[0]}`;
-        if (b - a === 1) return `Advantage ${names[1]}`;
-        if (a - b >= 2) return `Game, ${names[0]}`;
-        if (b - a >= 2) return `Game, ${names[1]}`;
-      }
-      const terms = ['Love', 'Fifteen', 'Thirty', 'Forty'];
-      const left = terms[a] ?? String(a);
-      const right = terms[b] ?? String(b);
-      return `${left} - ${right}`;
-    };
+    // Use raw numeric calls (e.g. "2 - 3") per user request
+    const tennisCall = (a, b) => `${a} - ${b}`;
 
     const announce = () => { speak(tennisCall(state.a, state.b)); };
 
-    const update = (k, v) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); announce(); };
+    // update accepts optional announce flag to suppress speak during programmatic resets
+    const update = (k, v, doAnnounce = true) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); if (doAnnounce) announce(); };
 
     const bindCard = (card, key) => {
       const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
@@ -286,9 +274,12 @@
 
     bindAction($('nextSetBtn'), () => {
       if(state.a===0 && state.b===0) return;
-      state.hist.push({a:state.a, b:state.b});
+      const set = {a: state.a, b: state.b};
+      state.hist.push(set);
       store.set('scHist_v9', state.hist);
-      update('a',0); update('b',0); vib([40,40,40]);
+      // Announce the archived set as raw numbers, then reset without additional announces
+      speak(`Set recorded: ${set.a} - ${set.b}`);
+      update('a', 0, false); update('b', 0, false); vib([40,40,40]);
     });
 
     bindAction($('fullResetBtn'), () => {
