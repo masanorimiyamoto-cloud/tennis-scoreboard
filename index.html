@@ -233,14 +233,14 @@
     const vib = (ptn) => navigator.vibrate?.(ptn);
 
     // --- Speech synthesis: Tennis-style score calls ---
-    const speak = (text, lang = 'en-US') => {
+    const speak = (text, lang = 'en-US', opts = {}) => {
       try {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
-        u.rate = 0.95;
-        u.pitch = 1;
+        u.rate = typeof opts.rate === 'number' ? opts.rate : 0.95;
+        u.pitch = typeof opts.pitch === 'number' ? opts.pitch : 1;
         window.speechSynthesis.speak(u);
       } catch (e) { console.log('speak error', e); }
     };
@@ -248,10 +248,22 @@
     // Use raw numeric calls (e.g. "2 - 3") per user request
     const tennisCall = (a, b) => `${a} - ${b}`;
 
-    const announce = () => { speak(tennisCall(state.a, state.b)); };
+    // Debounced announcer: wait 2s after last score change, then speak slowly
+    const ANNOUNCE_DELAY = 2000;
+    let announceTimer = null;
+    const scheduleAnnounce = () => {
+      if (announceTimer) clearTimeout(announceTimer);
+      announceTimer = setTimeout(() => {
+        speak(tennisCall(state.a, state.b), 'en-US', { rate: 0.8, pitch: 0.95 });
+        announceTimer = null;
+      }, ANNOUNCE_DELAY);
+    };
+
+    // Immediate announce helper (no delay)
+    const announceNow = () => { speak(tennisCall(state.a, state.b), 'en-US', { rate: 0.9, pitch: 0.98 }); };
 
     // update accepts optional announce flag to suppress speak during programmatic resets
-    const update = (k, v, doAnnounce = true) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); if (doAnnounce) announce(); };
+    const update = (k, v, doAnnounce = true) => { state[k] = v; store.set(k==='a'?'scA_v9':'scB_v9', v); render(); if (doAnnounce) scheduleAnnounce(); };
 
     const bindCard = (card, key) => {
       const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
