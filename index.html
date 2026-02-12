@@ -109,55 +109,9 @@
     .btn-close { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; }
     .btn-clear-archive { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-top: 20px; align-self: center; }
 
-    /* === Voice Settings Overlay === */
-    #voiceOverlay{
-      position:fixed; inset:0;
-      background: rgba(5,8,16,0.95);
-      backdrop-filter: blur(15px);
-      z-index: 120;
-      display:none;
-      padding: 18px;
-    }
-    #voiceOverlay.active{ display:block; }
-
-    #voiceOverlay .vbox{
-      max-width: 720px;
-      margin: 0 auto;
-      border: 1px solid var(--glass-border);
-      background: rgba(255,255,255,0.06);
-      border-radius: 16px;
-      padding: 14px;
-    }
-    #voiceOverlay .vhead{
-      display:flex; justify-content: space-between; align-items:center;
-      border-bottom: 1px solid var(--glass-border);
-      padding-bottom: 10px; margin-bottom: 12px;
-    }
-    #voiceOverlay .vtitle{
-      font-size: 18px; font-weight: 700; color: var(--accent);
-    }
-    #voiceOverlay .vbody{ display:flex; flex-direction:column; gap:12px; }
-    #voiceOverlay .vrow{ display:flex; gap:10px; align-items:center; }
-    #voiceOverlay .vlabel{ width: 70px; color: rgba(255,255,255,0.7); font-weight:700; font-size:12px; }
-    #voiceOverlay .vsel{
-      flex:1;
-      padding:10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--glass-border);
-      background: rgba(0,0,0,0.25);
-      color:#fff;
-      font-weight:700;
-    }
-    #voiceOverlay .vhint{
-      margin-top: 6px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.55);
-      line-height: 1.4;
-    }
-
     @media (orientation: landscape) and (max-height: 600px) {
       .wrap{ flex-direction: row; padding: 8px; gap: 8px; }
-      .hud{ flex-direction: column; width: 92px; order: 2; padding: 8px 4px; overflow-y: auto; overflow-x: hidden; }
+      .hud{ flex-direction: column; width: 80px; order: 2; padding: 8px 4px; overflow-y: auto; overflow-x: hidden; }
       .history{ flex-direction: column; max-height: 35%; width: 100%; }
       .actions{ flex-direction: column; width: 100%; }
       .btn-act{ font-size: 10px; padding: 10px 2px; width: 100%; }
@@ -177,7 +131,6 @@
       <div class="actions">
         <button class="btn-act next" id="nextSetBtn">NEXT</button>
         <button class="btn-act log" id="openLogBtn">LOG</button>
-        <button class="btn-act" id="voiceBtn">VOICE</button>
         <button class="btn-act" id="fullResetBtn">RESET</button>
       </div>
     </div>
@@ -196,7 +149,6 @@
     </div>
   </div>
 
-  <!-- Log Overlay -->
   <div id="logOverlay">
     <div class="log-header">
       <div style="font-size: 18px; font-weight: 700; color: var(--accent);">MATCH ARCHIVE</div>
@@ -204,35 +156,6 @@
     </div>
     <div class="log-content" id="logContent"></div>
     <button class="btn-clear-archive" id="clearArchiveBtn">CLEAR ALL ARCHIVES</button>
-  </div>
-
-  <!-- Voice Overlay -->
-  <div id="voiceOverlay">
-    <div class="vbox">
-      <div class="vhead">
-        <div class="vtitle">VOICE SETTINGS</div>
-        <button class="btn-close" id="closeVoiceBtn">CLOSE</button>
-      </div>
-
-      <div class="vbody">
-        <div class="vrow">
-          <div class="vlabel">Preset</div>
-          <select id="presetSel" class="vsel"></select>
-        </div>
-
-        <div class="vrow">
-          <div class="vlabel">Voice</div>
-          <select id="voiceSel" class="vsel"></select>
-        </div>
-
-        <div class="vrow" style="gap:10px; align-items:flex-start;">
-          <div class="vlabel">Test</div>
-          <button class="btn-act next" id="testVoiceBtn" style="flex:1;">SAY "six game to three"</button>
-        </div>
-
-        <div class="vhint" id="voiceHint"></div>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -262,18 +185,18 @@
       $('history').scrollLeft = $('history').scrollWidth;
     };
 
-    // --- シェア機能の実装 ---
+    // --- シェア機能 ---
     const shareMatch = async (index) => {
       const m = state.archives[index];
       const setScores = m.sets.map(s => `${s.a}-${s.b}`).join(' / ');
       const text = `【Tennis Match Result】\n${m.date}\n${m.nameA} vs ${m.nameB}\nScore: ${setScores}\n#TennisScoreBoard`;
 
       if (navigator.share) {
-        try { await navigator.share({ title: 'Match Result', text: text }); }
+        try { await navigator.share({ title: 'Match Result', text }); }
         catch (err) { console.log("Share failed", err); }
       } else {
-        navigator.clipboard.writeText(text);
-        alert("Copied to clipboard!");
+        try { await navigator.clipboard.writeText(text); alert("Copied to clipboard!"); }
+        catch { alert(text); }
       }
     };
 
@@ -307,23 +230,8 @@
 
     const vib = (ptn) => navigator.vibrate?.(ptn);
 
-    // ===== Voice preset system =====
-    const PRESETS = [
-      { key:'umpire_low',  name:'Umpire Low (male-ish)', rate:0.86, pitch:0.78, volume:1, style:'plain' },
-      { key:'umpire_high', name:'Umpire High (female-ish)', rate:0.90, pitch:1.18, volume:1, style:'plain' },
-      { key:'calm',        name:'Calm (slow clear)', rate:0.80, pitch:0.95, volume:1, style:'plain' },
-      { key:'fast',        name:'Fast (quick call)', rate:1.05, pitch:0.98, volume:1, style:'plain' },
-      { key:'dramatic',    name:'Dramatic (intonation)', rate:0.84, pitch:0.98, volume:1, style:'dramatic' },
-      { key:'robot',       name:'Robot-ish (flat)', rate:0.92, pitch:0.88, volume:1, style:'flat' },
-    ];
-
-    const voiceStoreKey = 'voiceKey_v1';
-    const presetStoreKey = 'presetKey_v1';
-
+    // --- Speech synthesis unlock (iOS対策) ---
     let speechUnlocked = false;
-    let selectedVoiceKey = store.get(voiceStoreKey, '');
-    let selectedPresetKey = store.get(presetStoreKey, 'umpire_low');
-
     const unlockSpeech = () => {
       if (speechUnlocked) return;
       if (!('speechSynthesis' in window)) return;
@@ -331,7 +239,7 @@
         window.speechSynthesis.getVoices();
         const u = new SpeechSynthesisUtterance(' ');
         u.lang = 'en-US';
-        u.volume = 0;
+        u.volume = 0; // mute
         u.rate = 1;
         u.onend = () => { speechUnlocked = true; };
         window.speechSynthesis.speak(u);
@@ -342,46 +250,26 @@
       } catch {}
     };
 
-    const getVoices = () => {
-      try { return window.speechSynthesis?.getVoices?.() || []; }
-      catch { return []; }
-    };
-
-    const voiceKeyOf = (v) => `${v.name}@@${v.lang}`;
-
-    const findVoiceByKey = (key) => {
-      if(!key) return null;
-      const vs = getVoices();
-      return vs.find(v => voiceKeyOf(v) === key) || null;
-    };
-
-    const bestDefaultVoice = () => {
-      const vs = getVoices();
-      let v = vs.find(x => /en-US/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)) || null;
-      return v || (vs[0] || null);
-    };
-
-    const presetByKey = (k) => PRESETS.find(p => p.key === k) || PRESETS[0];
-
-    const speakWith = (text, { rate, pitch, volume, voice, lang='en-US' } = {}) => {
+    // --- Speech synthesis: Tennis-style score calls ---
+    const speak = (text, lang = 'en-US', opts = {}) => {
       try {
         if (!('speechSynthesis' in window)) return;
+        // cancel連打で無音化する端末があるので、最小限に
         try { window.speechSynthesis.cancel(); } catch {}
         const u = new SpeechSynthesisUtterance(text);
         u.lang = lang;
-        if (voice) u.voice = voice;
-        if (typeof rate === 'number') u.rate = rate;
-        if (typeof pitch === 'number') u.pitch = pitch;
-        if (typeof volume === 'number') u.volume = volume;
+        u.rate = typeof opts.rate === 'number' ? opts.rate : 0.95;
+        u.pitch = typeof opts.pitch === 'number' ? opts.pitch : 1;
         window.speechSynthesis.speak(u);
       } catch (e) { console.log('speak error', e); }
     };
 
+    // --- Number to words (0-20 & tens) ---
     const numWord = (n) => {
       const w = {
         0:'zero',1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight',9:'nine',10:'ten',
         11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',19:'nineteen',20:'twenty',
-        30:'thirty',40:'forty',50:'fifty',60:'sixty',70:'seventy',80:'eighty',90:'ninety'
+        30:'thirty',40:'forty',50:'fifty',60:'sixty'
       };
       n = Number(n);
       if (w[n]) return w[n];
@@ -395,42 +283,23 @@
       return String(n);
     };
 
+    // 6 3 => "six game to three"
     const tennisCall = (a, b) => `${numWord(a)} game to ${numWord(b)}`;
 
-    const speakScore = (a, b) => {
-      const preset = presetByKey(selectedPresetKey);
-      const voice = findVoiceByKey(selectedVoiceKey) || bestDefaultVoice();
-      const phrase = tennisCall(a, b);
-
-      if (preset.style === 'dramatic') {
-        const left = `${numWord(a)} game`;
-        const right = `to ${numWord(b)}`;
-        speakWith(left,  { voice, rate: preset.rate, pitch: preset.pitch + 0.10, volume: preset.volume });
-        setTimeout(() => {
-          speakWith(right, { voice, rate: preset.rate, pitch: preset.pitch - 0.06, volume: preset.volume });
-        }, 120);
-        return;
-      }
-
-      if (preset.style === 'flat') {
-        speakWith(phrase, { voice, rate: preset.rate, pitch: 0.82, volume: preset.volume });
-        return;
-      }
-
-      speakWith(phrase, { voice, rate: preset.rate, pitch: preset.pitch, volume: preset.volume });
-    };
-
+    // Debounced announcer: wait 2s after last score change
     const ANNOUNCE_DELAY = 2000;
     let announceTimer = null;
     const scheduleAnnounce = () => {
       if (announceTimer) clearTimeout(announceTimer);
       announceTimer = setTimeout(() => {
-        speakScore(state.a, state.b);
+        speak(tennisCall(state.a, state.b), 'en-US', { rate: 0.85, pitch: 0.95 });
         announceTimer = null;
       }, ANNOUNCE_DELAY);
     };
-    const announceNow = () => speakScore(state.a, state.b);
 
+    const announceNow = () => speak(tennisCall(state.a, state.b), 'en-US', { rate: 0.92, pitch: 0.98 });
+
+    // update accepts optional announce flag to suppress speak during programmatic resets
     const update = (k, v, doAnnounce = true) => {
       state[k] = v;
       store.set(k==='a'?'scA_v9':'scB_v9', v);
@@ -443,20 +312,34 @@
       let timer, holding = false;
 
       plus.onpointerdown = () => {
-        unlockSpeech();
         holding = false;
-        timer = setTimeout(() => { holding = true; update(key, 0); vib(60); }, MS_RESET);
+        timer = setTimeout(() => {
+          holding = true;
+          unlockSpeech(); // ★ユーザー操作中に解錠
+          update(key, 0, false); // resetは喋らない
+          vib(60);
+        }, MS_RESET);
       };
+
       plus.onpointerup = () => {
         clearTimeout(timer);
-        if(!holding) { unlockSpeech(); update(key, state[key] >= MAX ? 0 : state[key] + 1); vib(15); }
+        if(!holding) {
+          unlockSpeech(); // ★ここで解錠
+          update(key, state[key] >= MAX ? 0 : state[key] + 1, true);
+          vib(15);
+        }
       };
-      minus.onclick = () => { unlockSpeech(); update(key, state[key] <= 0 ? 0 : state[key] - 1); vib(30); };
+
+      minus.onclick = () => {
+        unlockSpeech(); // ★ここで解錠
+        update(key, state[key] <= 0 ? 0 : state[key] - 1, true);
+        vib(30);
+      };
     };
 
     const bindAction = (btn, fn) => {
       let timer;
-      btn.onpointerdown = () => { unlockSpeech(); timer = setTimeout(fn, MS_RESET); };
+      btn.onpointerdown = () => { timer = setTimeout(() => { unlockSpeech(); fn(); }, MS_RESET); };
       btn.onpointerup = () => { if(timer) { clearTimeout(timer); vib(5); } };
     };
 
@@ -466,10 +349,8 @@
       state.hist.push(set);
       store.set('scHist_v9', state.hist);
 
-      speakWith(`Set recorded. ${tennisCall(set.a, set.b)}`, {
-        voice: findVoiceByKey(selectedVoiceKey) || bestDefaultVoice(),
-        rate: 0.95, pitch: 1.0, volume: 1, lang: 'en-US'
-      });
+      // Announce recorded set
+      speak(`Set recorded. ${tennisCall(set.a, set.b)}`, 'en-US', { rate: 0.95, pitch: 1 });
 
       update('a', 0, false);
       update('b', 0, false);
@@ -488,8 +369,7 @@
       }
       state.a = 0; state.b = 0; state.hist = [];
       store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
-      render();
-      vib(200);
+      render(); vib(200);
       announceNow();
       alert("Saved & Reset. Open LOG to share.");
     });
@@ -499,69 +379,6 @@
     $('clearArchiveBtn').onclick = () => {
       if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v9', []); renderArchives(); }
     };
-
-    // ===== Voice UI wiring =====
-    const openVoice = () => { $('voiceOverlay').classList.add('active'); vib(10); };
-    const closeVoice = () => { $('voiceOverlay').classList.remove('active'); vib(5); };
-
-    const refreshVoiceUI = () => {
-      const pSel = $('presetSel');
-      pSel.innerHTML = PRESETS.map(p => `<option value="${p.key}">${p.name}</option>`).join('');
-      pSel.value = selectedPresetKey;
-
-      const vSel = $('voiceSel');
-      const vs = getVoices();
-      vSel.innerHTML = vs.map(v => {
-        const key = voiceKeyOf(v);
-        const tag = `${v.name} (${v.lang})${v.default ? ' ★default' : ''}`;
-        return `<option value="${key}">${tag}</option>`;
-      }).join('') || `<option value="">(no voices)</option>`;
-
-      if (!selectedVoiceKey) {
-        const best = bestDefaultVoice();
-        if (best) selectedVoiceKey = voiceKeyOf(best);
-        store.set(voiceStoreKey, selectedVoiceKey);
-      }
-      vSel.value = selectedVoiceKey;
-
-      const preset = presetByKey(selectedPresetKey);
-      $('voiceHint').textContent =
-        `Preset: ${preset.name}  /  rate=${preset.rate.toFixed(2)} pitch=${preset.pitch.toFixed(2)}  ※端末によって声の種類は変わります。`;
-    };
-
-    $('voiceBtn').onclick = () => { unlockSpeech(); refreshVoiceUI(); openVoice(); };
-    $('closeVoiceBtn').onclick = () => closeVoice();
-
-    $('presetSel').onchange = (e) => {
-      selectedPresetKey = e.target.value;
-      store.set(presetStoreKey, selectedPresetKey);
-      refreshVoiceUI();
-      vib(10);
-    };
-
-    $('voiceSel').onchange = (e) => {
-      selectedVoiceKey = e.target.value;
-      store.set(voiceStoreKey, selectedVoiceKey);
-      vib(10);
-    };
-
-    $('testVoiceBtn').onclick = () => {
-      unlockSpeech();
-      const preset = presetByKey(selectedPresetKey);
-      speakWith('six game to three', {
-        voice: findVoiceByKey(selectedVoiceKey) || bestDefaultVoice(),
-        rate: preset.rate,
-        pitch: preset.pitch,
-        volume: preset.volume,
-        lang: 'en-US'
-      });
-    };
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        try { refreshVoiceUI(); } catch {}
-      };
-    }
 
     bindCard($('cardA'), 'a');
     bindCard($('cardB'), 'b');
