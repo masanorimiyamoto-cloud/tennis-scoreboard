@@ -249,7 +249,7 @@
     const tennisCall = (a, b) => `${a} - ${b}`;
 
     // Debounced announcer: wait 2s after last score change, then speak slowly
-    const ANNOUNCE_DELAY = 2000;
+    const ANNOUNCE_DELAY = 500;
     let announceTimer = null;
     const scheduleAnnounce = () => {
       if (announceTimer) clearTimeout(announceTimer);
