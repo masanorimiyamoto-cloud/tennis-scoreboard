@@ -283,8 +283,8 @@
       return String(n);
     };
 
-    // 6 3 => "six game to three"
-    const tennisCall = (a, b) => `${numWord(a)} game to ${numWord(b)}`;
+    // 6 3 => "six   three"
+    const tennisCall = (a, b) => `${numWord(a)} ${numWord(b)}`;
 
     // Debounced announcer: wait 2s after last score change
     const ANNOUNCE_DELAY = 2000;
