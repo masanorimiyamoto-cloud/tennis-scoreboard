@@ -283,8 +283,18 @@
       return String(n);
     };
 
-    // 6 3 => "six   three"
-    const tennisCall = (a, b) => `${numWord(a)} ${numWord(b)}`;
+    /// 6-3 => "six game … to … three"
+    const tennisCall = (a, b) => {
+    const aw = numWord(a);
+    const bw = numWord(b);
+
+      // “…” や “,,” は TTS が短い間を作りやすい
+      // game(s) は 1 のときだけ game、それ以外は games
+      const gameWord = (n) => (Number(n) === 1 ? 'game' : 'games');
+
+      // 例: "six games … to … three"
+      return `${aw} ${gameWord(a)} … to … ${bw}`;
+    };
 
     // Debounced announcer: wait 2s after last score change
     const ANNOUNCE_DELAY = 2000;
