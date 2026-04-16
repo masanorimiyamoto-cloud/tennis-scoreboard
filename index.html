@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="ja">
 <head>
@@ -17,6 +16,7 @@
       --danger: #ff3355;
       --warning: #ffcc00;
       --share: #4cd964;
+      --serve: #ff9500;
       --glass: rgba(255, 255, 255, 0.08);
       --glass-border: rgba(255, 255, 255, 0.15);
     }
@@ -45,51 +45,162 @@
       scrollbar-width: none; min-width: 0;
     }
     .history .line{
-      font-size: 16px; font-weight: 700; color: var(--accent); padding: 4px 10px;
-      border-radius: 6px; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
+      font-size: 16px; font-weight: 700; color: rgba(0,242,255,0.5);
+      padding: 4px 10px; border-radius: 6px;
+      background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.2);
       white-space: nowrap;
     }
+    .history .line .win { color: #fff; }
 
     .actions{ display: flex; gap: 6px; flex-shrink: 0; }
 
     .btn-act{
+      position: relative; overflow: hidden;
       border: 1px solid var(--glass-border); background: var(--glass);
       color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700;
       padding: 8px 10px; border-radius: 8px; cursor: pointer; text-transform: uppercase;
-      white-space: nowrap;
+      white-space: nowrap; touch-action: none;
     }
     .btn-act:active{ transform: scale(0.92); background: rgba(255,255,255,0.2); }
     .btn-act.next{ color: var(--accent); border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
     .btn-act.log{ color: var(--warning); border-color: var(--warning); background: rgba(255, 204, 0, 0.05); }
+    .btn-act.undo{ color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+    .btn-act.undo:disabled{ opacity: 0.3; cursor: default; transform: none; }
+
+    /* Long-press progress bar */
+    .press-progress{
+      position: absolute; bottom: 0; left: 0;
+      width: 0%; height: 3px;
+      background: currentColor; opacity: 0.7;
+      transition: none;
+    }
+    .btn-act.pressing .press-progress{
+      width: 100%;
+      transition: width 800ms linear;
+    }
 
     .row{ flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .score-card{
       position: relative; display: flex; flex-direction: column;
-      border: 1px solid var(--glass-border); background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
+      border: 1px solid var(--glass-border);
+      background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.3) 100%);
       border-radius: 18px; overflow: hidden;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .score-card.serving{
+      border-color: var(--serve);
+      box-shadow: 0 0 24px rgba(255, 149, 0, 0.18);
     }
 
     .player-label {
       position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
       font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.5); background: rgba(0, 0, 0, 0.4);
       padding: 2px 10px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);
-      text-transform: uppercase; letter-spacing: 1px; cursor: pointer; white-space: nowrap; max-width: 80%; overflow: hidden; text-overflow: ellipsis;
+      text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+      white-space: nowrap; max-width: 70%; overflow: hidden; text-overflow: ellipsis;
     }
 
-    .btn-plus{ flex: 1; border: none; background: transparent; color: #fff; display: grid; place-items: center; width: 100%; cursor: pointer; }
-    .num{ font-size: 35vmin; font-weight: 700; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.6); font-variant-numeric: tabular-nums; }
-    .btn-minus{ flex: 0 0 50px; border: none; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4); font-size: 24px; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
+    /* Serve dot — always visible, glows when serving */
+    .serve-dot{
+      position: absolute; top: 12px; right: 12px; z-index: 6;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s, border-color 0.3s;
+    }
+    .score-card.serving .serve-dot{
+      background: var(--serve);
+      border-color: var(--serve);
+      box-shadow: 0 0 10px var(--serve), 0 0 22px rgba(255,149,0,0.35);
+    }
 
-    /* === Log Modal === */
+    .btn-plus{
+      flex: 1; border: none; background: transparent; color: #fff;
+      display: grid; place-items: center; width: 100%; cursor: pointer;
+      touch-action: none;
+    }
+    .num{
+      font-size: 35vmin; font-weight: 700; line-height: 1;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.6); font-variant-numeric: tabular-nums;
+      display: inline-block;
+    }
+    @keyframes numPop{
+      0%  { transform: scale(1); }
+      40% { transform: scale(1.13); }
+      100%{ transform: scale(1); }
+    }
+    .num.pop{ animation: numPop 0.22s ease-out; }
+
+    .btn-minus{
+      flex: 0 0 50px; border: none; border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.4);
+      font-size: 24px; font-weight: 700; cursor: pointer; display: grid; place-items: center;
+    }
+
+    /* ── Toast ───────────────────────────────────────── */
+    #toast{
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: rgba(20,32,56,0.97); border: 1px solid var(--glass-border);
+      color: #fff; font-size: 14px; font-weight: 700;
+      padding: 10px 22px; border-radius: 30px;
+      z-index: 500; opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; white-space: nowrap;
+    }
+    #toast.show{
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Modal base ──────────────────────────────────── */
+    .modal-overlay{
+      position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(10px);
+      z-index: 400; display: none; place-items: center;
+    }
+    .modal-overlay.active{ display: grid; }
+    .modal-box{
+      background: #0d1526; border: 1px solid var(--glass-border);
+      border-radius: 18px; padding: 26px 22px;
+      min-width: 260px; max-width: 320px; width: 88%;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+    .modal-title{ font-size: 16px; font-weight: 700; text-align: center; line-height: 1.5; }
+    .modal-btns{ display: flex; gap: 10px; }
+    .modal-btns button{
+      flex: 1; padding: 13px; border-radius: 10px;
+      font-size: 14px; font-weight: 700; font-family: 'Chakra Petch', sans-serif;
+      cursor: pointer; border: 1px solid var(--glass-border); text-transform: uppercase;
+    }
+    .btn-cancel{ background: var(--glass); color: rgba(255,255,255,0.65); }
+    .btn-ok-danger{ background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-ok-safe{ background: var(--accent); color: #000; border-color: var(--accent); }
+
+    /* ── Name input ──────────────────────────────────── */
+    #nameInput{
+      background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+      color: #fff; font-size: 18px; font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 11px 14px; border-radius: 8px;
+      width: 100%; box-sizing: border-box;
+      text-transform: uppercase; letter-spacing: 1px; outline: none;
+      -webkit-user-select: text; user-select: text;
+    }
+    #nameInput:focus{ border-color: var(--accent); }
+
+    /* ── Log Modal ───────────────────────────────────── */
     #logOverlay {
-      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.95); backdrop-filter: blur(15px);
+      position: fixed; inset: 0; background: rgba(5, 8, 16, 0.95);
+      backdrop-filter: blur(15px);
       z-index: 100; display: none; flex-direction: column; padding: 20px;
     }
     #logOverlay.active { display: flex; }
-    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px; }
+    .log-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;
+    }
     .log-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-
-    /* Log Item with Share */
     .log-item {
       background: var(--glass); border: 1px solid var(--glass-border);
       padding: 14px; border-radius: 12px;
@@ -99,15 +210,24 @@
     .log-date { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
     .log-players { font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
     .log-sets { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
-
     .btn-share {
-      background: rgba(76, 217, 100, 0.1); border: 1px solid var(--share); color: var(--share);
-      padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+      background: rgba(76, 217, 100, 0.1); border: 1px solid var(--share);
+      color: var(--share); padding: 8px 12px; border-radius: 8px;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: 'Chakra Petch', sans-serif;
     }
     .btn-share:active { background: var(--share); color: #000; }
-
-    .btn-close { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; }
-    .btn-clear-archive { background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 11px; padding: 8px 12px; border-radius: 6px; margin-top: 20px; align-self: center; }
+    .btn-close {
+      background: #333; border: none; color: white;
+      padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+    .btn-clear-archive {
+      background: transparent; border: 1px solid var(--danger); color: var(--danger);
+      font-size: 11px; padding: 8px 12px; border-radius: 6px;
+      margin-top: 20px; align-self: center; cursor: pointer;
+      font-family: 'Chakra Petch', sans-serif;
+    }
 
     @media (orientation: landscape) and (max-height: 600px) {
       .wrap{ flex-direction: row; padding: 8px; gap: 8px; }
@@ -129,29 +249,59 @@
     <div class="hud">
       <div class="history" id="history"></div>
       <div class="actions">
-        <button class="btn-act next" id="nextSetBtn">NEXT</button>
-        <button class="btn-act log" id="openLogBtn">LOG</button>
-        <button class="btn-act" id="fullResetBtn">RESET</button>
+        <button class="btn-act next" id="nextSetBtn">NEXT<span class="press-progress"></span></button>
+        <button class="btn-act log"  id="openLogBtn">LOG</button>
+        <button class="btn-act undo" id="undoBtn" disabled>UNDO</button>
+        <button class="btn-act"      id="fullResetBtn">RESET<span class="press-progress"></span></button>
       </div>
     </div>
 
     <div class="row">
       <div class="score-card" id="cardA">
-        <div class="player-label" id="labelA" onclick="editName('a')">Players1</div>
-        <button class="btn-plus" id="btnPlusA"><span class="num">0</span></button>
+        <div class="player-label" id="labelA">Players1</div>
+        <div class="serve-dot"   id="serveDotA"></div>
+        <button class="btn-plus" id="btnPlusA"><span class="num" id="numA">0</span></button>
         <button class="btn-minus" id="btnMinusA">−</button>
       </div>
       <div class="score-card" id="cardB">
-        <div class="player-label" id="labelB" onclick="editName('b')">Players2</div>
-        <button class="btn-plus" id="btnPlusB"><span class="num">0</span></button>
+        <div class="player-label" id="labelB">Players2</div>
+        <div class="serve-dot"   id="serveDotB"></div>
+        <button class="btn-plus" id="btnPlusB"><span class="num" id="numB">0</span></button>
         <button class="btn-minus" id="btnMinusB">−</button>
       </div>
     </div>
   </div>
 
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirmOverlay">
+    <div class="modal-box">
+      <div class="modal-title" id="confirmMsg"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel"   id="confirmCancel">CANCEL</button>
+        <button class="btn-ok-danger" id="confirmOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Name Input Modal -->
+  <div class="modal-overlay" id="nameOverlay">
+    <div class="modal-box">
+      <div class="modal-title">PLAYER NAME</div>
+      <input id="nameInput" type="text" maxlength="20" autocomplete="off" />
+      <div class="modal-btns">
+        <button class="btn-cancel"  id="nameCancel">CANCEL</button>
+        <button class="btn-ok-safe" id="nameSave">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Overlay -->
   <div id="logOverlay">
     <div class="log-header">
-      <div style="font-size: 18px; font-weight: 700; color: var(--accent);">MATCH ARCHIVE</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent)">MATCH ARCHIVE</div>
       <button class="btn-close" id="closeLogBtn">CLOSE</button>
     </div>
     <div class="log-content" id="logContent"></div>
@@ -159,78 +309,157 @@
   </div>
 
   <script>
-    const MAX = 7, MS_RESET = 800, HISTORY_MAX = 8;
-    const $ = (id) => document.getElementById(id);
+    const MAX = 7, MS_HOLD = 800, HISTORY_MAX = 8;
+    const $ = id => document.getElementById(id);
     const store = {
-      get: (k, def) => { const val = localStorage.getItem(k); return val ? JSON.parse(val) : def; },
+      get: (k, def) => { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; },
       set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
     };
 
     let state = {
-      a: store.get('scA_v9', 0),
-      b: store.get('scB_v9', 0),
-      nameA: store.get('nameA_v9', 'Players_1'),
-      nameB: store.get('nameB_v9', 'Players_2'),
-      hist: store.get('scHist_v9', []),
-      archives: store.get('scArch_v9', [])
+      a:        store.get('scA_v9',    0),
+      b:        store.get('scB_v9',    0),
+      nameA:    store.get('nameA_v9',  'Players_1'),
+      nameB:    store.get('nameB_v9',  'Players_2'),
+      hist:     store.get('scHist_v9', []),
+      archives: store.get('scArch_v9', []),
+      serve:    store.get('serve_v9',  'a'),
+    };
+    let undoStack = [];
+
+    // ── Toast ─────────────────────────────────────────────────
+    let toastTimer = null;
+    const showToast = (msg, ms = 2400) => {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), ms);
     };
 
+    // ── Confirm modal ─────────────────────────────────────────
+    const showConfirm = (msg, onOk) => {
+      $('confirmMsg').textContent = msg;
+      $('confirmOverlay').classList.add('active');
+      $('confirmOk').onclick     = () => { $('confirmOverlay').classList.remove('active'); onOk(); };
+      $('confirmCancel').onclick = () => $('confirmOverlay').classList.remove('active');
+    };
+
+    // ── Name-input modal ──────────────────────────────────────
+    const showNameInput = (side) => {
+      const input = $('nameInput');
+      input.value = side === 'a' ? state.nameA : state.nameB;
+      $('nameOverlay').classList.add('active');
+      setTimeout(() => { input.focus(); input.select(); }, 80);
+
+      const save = () => {
+        const v = input.value.trim().toUpperCase();
+        if (v) {
+          state[side === 'a' ? 'nameA' : 'nameB'] = v;
+          store.set(side === 'a' ? 'nameA_v9' : 'nameB_v9', v);
+          render();
+        }
+        $('nameOverlay').classList.remove('active');
+      };
+      $('nameSave').onclick   = save;
+      $('nameCancel').onclick = () => $('nameOverlay').classList.remove('active');
+      input.onkeydown = e => {
+        if (e.key === 'Enter')  save();
+        if (e.key === 'Escape') $('nameOverlay').classList.remove('active');
+      };
+    };
+
+    // ── Undo ──────────────────────────────────────────────────
+    const pushUndo = () => {
+      undoStack.push({ a: state.a, b: state.b, serve: state.serve });
+      if (undoStack.length > 20) undoStack.shift();
+      $('undoBtn').disabled = false;
+    };
+    const undoPoint = () => {
+      if (!undoStack.length) return;
+      const prev = undoStack.pop();
+      state.a = prev.a; state.b = prev.b; state.serve = prev.serve;
+      store.set('scA_v9', state.a); store.set('scB_v9', state.b); store.set('serve_v9', state.serve);
+      render(); vib(30); showToast('Undone');
+      if (!undoStack.length) $('undoBtn').disabled = true;
+    };
+
+    // ── Serve toggle (silent — callers vibrate as needed) ─────
+    const toggleServe = () => {
+      state.serve = state.serve === 'a' ? 'b' : 'a';
+      store.set('serve_v9', state.serve);
+      render();
+    };
+
+    // ── Render ────────────────────────────────────────────────
     const render = () => {
-      $('cardA').querySelector('.num').textContent = state.a;
-      $('cardB').querySelector('.num').textContent = state.b;
+      $('numA').textContent = state.a;
+      $('numB').textContent = state.b;
       $('labelA').textContent = state.nameA;
       $('labelB').textContent = state.nameB;
-      $('history').innerHTML = state.hist.slice(-HISTORY_MAX)
-        .map(h => `<div class="line">${h.a}-${h.b}</div>`).join('');
+      $('cardA').classList.toggle('serving', state.serve === 'a');
+      $('cardB').classList.toggle('serving', state.serve === 'b');
+
+      $('history').innerHTML = state.hist.slice(-HISTORY_MAX).map(h => {
+        const wa = h.a > h.b ? ' class="win"' : '';
+        const wb = h.b > h.a ? ' class="win"' : '';
+        return `<div class="line"><span${wa}>${h.a}</span>-<span${wb}>${h.b}</span></div>`;
+      }).join('');
       $('history').scrollLeft = $('history').scrollWidth;
     };
 
-    // --- シェア機能 ---
+    // ── Score pop animation ───────────────────────────────────
+    const popNum = key => {
+      const el = $(key === 'a' ? 'numA' : 'numB');
+      el.classList.remove('pop');
+      void el.offsetWidth;
+      el.classList.add('pop');
+    };
+
+    // ── Share ─────────────────────────────────────────────────
     const shareMatch = async (index) => {
       const m = state.archives[index];
       const setScores = m.sets.map(s => `${s.a}-${s.b}`).join(' / ');
       const text = `【Tennis Match Result】\n${m.date}\n${m.nameA} vs ${m.nameB}\nScore: ${setScores}\n#TennisScoreBoard`;
-
       if (navigator.share) {
-        try { await navigator.share({ title: 'Match Result', text }); }
-        catch (err) { console.log("Share failed", err); }
+        try { await navigator.share({ title: 'Match Result', text }); } catch {}
       } else {
-        try { await navigator.clipboard.writeText(text); alert("Copied to clipboard!"); }
-        catch { alert(text); }
+        try { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!'); }
+        catch { showToast(text); }
       }
     };
+    window.shareMatch = shareMatch;
 
+    // ── Archive render ────────────────────────────────────────
     const renderArchives = () => {
       const content = $('logContent');
-      if (state.archives.length === 0) {
-        content.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; margin-top:40px;">No match records yet.</div>';
+      if (!state.archives.length) {
+        content.innerHTML = '<div style="color:rgba(255,255,255,0.3);text-align:center;margin-top:40px">No match records yet.</div>';
         return;
       }
-      content.innerHTML = state.archives.map((m, idx) => `
-        <div class="log-item">
-          <div class="log-info">
-            <div class="log-date">${m.date}</div>
-            <div class="log-players">${m.nameA} vs ${m.nameB}</div>
-            <div class="log-sets">${m.sets.map(s => `${s.a}-${s.b}`).join(' / ')}</div>
-          </div>
-          <button class="btn-share" onclick="shareMatch(${idx})">SHARE</button>
-        </div>
-      `).reverse().join('');
+      content.innerHTML = [...state.archives].reverse().map((m, ri) => {
+        const idx = state.archives.length - 1 - ri;
+        const setHtml = m.sets.map(s => {
+          const wa = s.a > s.b ? ' style="color:#fff"' : '';
+          const wb = s.b > s.a ? ' style="color:#fff"' : '';
+          return `<span${wa}>${s.a}</span>-<span${wb}>${s.b}</span>`;
+        }).join(' / ');
+        return `
+          <div class="log-item">
+            <div class="log-info">
+              <div class="log-date">${m.date}</div>
+              <div class="log-players">${m.nameA} vs ${m.nameB}</div>
+              <div class="log-sets">${setHtml}</div>
+            </div>
+            <button class="btn-share" onclick="shareMatch(${idx})">SHARE</button>
+          </div>`;
+      }).join('');
     };
 
-    window.editName = (side) => {
-      const current = side === 'a' ? state.nameA : state.nameB;
-      const newName = prompt("名前を入力", current);
-      if (newName) {
-        state[side === 'a' ? 'nameA' : 'nameB'] = newName.toUpperCase();
-        store.set(side === 'a' ? 'nameA_v9' : 'nameB_v9', state[side === 'a' ? 'nameA' : 'nameB']);
-        render();
-      }
-    };
+    // ── Vibration ─────────────────────────────────────────────
+    const vib = ptn => navigator.vibrate?.(ptn);
 
-    const vib = (ptn) => navigator.vibrate?.(ptn);
-
-    // --- Speech synthesis unlock (iOS対策) ---
+    // ── Speech unlock (iOS) ───────────────────────────────────
     let speechUnlocked = false;
     const unlockSpeech = () => {
       if (speechUnlocked) return;
@@ -238,65 +467,46 @@
       try {
         window.speechSynthesis.getVoices();
         const u = new SpeechSynthesisUtterance(' ');
-        u.lang = 'en-US';
-        u.volume = 0; // mute
-        u.rate = 1;
+        u.lang = 'en-US'; u.volume = 0; u.rate = 1;
         u.onend = () => { speechUnlocked = true; };
         window.speechSynthesis.speak(u);
-        setTimeout(() => {
-          try { window.speechSynthesis.cancel(); } catch {}
-          speechUnlocked = true;
-        }, 50);
+        setTimeout(() => { try { window.speechSynthesis.cancel(); } catch {} speechUnlocked = true; }, 50);
       } catch {}
     };
 
-    // --- Speech synthesis: Tennis-style score calls ---
+    // ── Speech synthesis ──────────────────────────────────────
     const speak = (text, lang = 'en-US', opts = {}) => {
       try {
         if (!('speechSynthesis' in window)) return;
-        // cancel連打で無音化する端末があるので、最小限に
         try { window.speechSynthesis.cancel(); } catch {}
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang;
-        u.rate = typeof opts.rate === 'number' ? opts.rate : 0.95;
+        u.lang  = lang;
+        u.rate  = typeof opts.rate  === 'number' ? opts.rate  : 0.95;
         u.pitch = typeof opts.pitch === 'number' ? opts.pitch : 1;
         window.speechSynthesis.speak(u);
       } catch (e) { console.log('speak error', e); }
     };
 
-    // --- Number to words (0-20 & tens) ---
-    const numWord = (n) => {
-      const w = {
-        0:'zero',1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight',9:'nine',10:'ten',
-        11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',19:'nineteen',20:'twenty',
-        30:'thirty',40:'forty',50:'fifty',60:'sixty'
-      };
+    const numWord = n => {
+      const w = {0:'zero',1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',
+        8:'eight',9:'nine',10:'ten',11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',
+        15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',19:'nineteen',20:'twenty',
+        30:'thirty',40:'forty',50:'fifty',60:'sixty'};
       n = Number(n);
-      if (w[n]) return w[n];
+      if (w[n] !== undefined) return w[n];
       if (n < 0) return 'zero';
       if (n < 100) {
-        const tens = Math.floor(n/10)*10;
-        const ones = n%10;
+        const tens = Math.floor(n/10)*10, ones = n%10;
         if (w[tens] && ones === 0) return w[tens];
-        if (w[tens] && w[ones]) return `${w[tens]} ${w[ones]}`;
+        if (w[tens] && w[ones])    return `${w[tens]} ${w[ones]}`;
       }
       return String(n);
     };
-
-    /// 6-3 => "six game … to … three"
     const tennisCall = (a, b) => {
-    const aw = numWord(a);
-    const bw = numWord(b);
-
-      // “…” や “,,” は TTS が短い間を作りやすい
-      // game(s) は 1 のときだけ game、それ以外は games
-      const gameWord = (n) => (Number(n) === 1 ? 'game' : 'games');
-
-      // 例: "six games … to … three"
-      return `${aw} ${gameWord(a)} … to … ${bw}`;
+      const gw = n => Number(n) === 1 ? 'game' : 'games';
+      return `${numWord(a)} ${gw(a)} … to … ${numWord(b)}`;
     };
 
-    // Debounced announcer: wait 2s after last score change
     const ANNOUNCE_DELAY = 2000;
     let announceTimer = null;
     const scheduleAnnounce = () => {
@@ -306,96 +516,143 @@
         announceTimer = null;
       }, ANNOUNCE_DELAY);
     };
-
     const announceNow = () => speak(tennisCall(state.a, state.b), 'en-US', { rate: 0.92, pitch: 0.98 });
 
-    // update accepts optional announce flag to suppress speak during programmatic resets
+    // ── State update ──────────────────────────────────────────
     const update = (k, v, doAnnounce = true) => {
       state[k] = v;
-      store.set(k==='a'?'scA_v9':'scB_v9', v);
+      store.set(k === 'a' ? 'scA_v9' : 'scB_v9', v);
       render();
+      popNum(k);
       if (doAnnounce) scheduleAnnounce();
     };
 
+    // ── Card binding (tap = +1, long-hold = reset to 0) ───────
     const bindCard = (card, key) => {
-      const plus = card.querySelector('.btn-plus'), minus = card.querySelector('.btn-minus');
+      const plus  = card.querySelector('.btn-plus');
+      const minus = card.querySelector('.btn-minus');
       let timer, holding = false;
 
       plus.onpointerdown = () => {
         holding = false;
         timer = setTimeout(() => {
           holding = true;
-          unlockSpeech(); // ★ユーザー操作中に解錠
-          update(key, 0, false); // resetは喋らない
+          unlockSpeech();
+          pushUndo();
+          update(key, 0, false);
           vib(60);
-        }, MS_RESET);
+        }, MS_HOLD);
       };
-
       plus.onpointerup = () => {
         clearTimeout(timer);
-        if(!holding) {
-          unlockSpeech(); // ★ここで解錠
+        if (!holding) {
+          unlockSpeech();
+          pushUndo();
           update(key, state[key] >= MAX ? 0 : state[key] + 1, true);
+          toggleServe(); // ゲームごとにサーブ自動切り替え
           vib(15);
         }
       };
-
       minus.onclick = () => {
-        unlockSpeech(); // ★ここで解錠
-        update(key, state[key] <= 0 ? 0 : state[key] - 1, true);
+        if (state[key] <= 0) return;
+        unlockSpeech();
+        pushUndo();
+        update(key, state[key] - 1, true);
+        toggleServe(); // 取り消し時もサーブを戻す
         vib(30);
       };
     };
 
+    // ── Action binding (long-press with progress bar) ─────────
     const bindAction = (btn, fn) => {
       let timer;
-      btn.onpointerdown = () => { timer = setTimeout(() => { unlockSpeech(); fn(); }, MS_RESET); };
-      btn.onpointerup = () => { if(timer) { clearTimeout(timer); vib(5); } };
+      btn.onpointerdown = () => {
+        btn.classList.add('pressing');
+        timer = setTimeout(() => {
+          btn.classList.remove('pressing');
+          unlockSpeech();
+          fn();
+          vib(80);
+          timer = null;
+        }, MS_HOLD);
+      };
+      btn.onpointerup = () => {
+        if (timer) { clearTimeout(timer); timer = null; vib(5); }
+        btn.classList.remove('pressing');
+      };
     };
 
+    // ── Player label → name edit ──────────────────────────────
+    $('labelA').onclick = () => showNameInput('a');
+    $('labelB').onclick = () => showNameInput('b');
+
+    // ── Serve dot → toggle serve ──────────────────────────────
+    $('serveDotA').onpointerdown = e => e.stopPropagation();
+    $('serveDotB').onpointerdown = e => e.stopPropagation();
+    $('serveDotA').onclick = () => { toggleServe(); vib(15); };
+    $('serveDotB').onclick = () => { toggleServe(); vib(15); };
+
+    // ── NEXT SET (long-press) ─────────────────────────────────
     bindAction($('nextSetBtn'), () => {
-      if(state.a===0 && state.b===0) return;
-      const set = {a: state.a, b: state.b};
+      if (state.a === 0 && state.b === 0) return;
+      const set = { a: state.a, b: state.b };
       state.hist.push(set);
       store.set('scHist_v9', state.hist);
-
-      // Announce recorded set
+      undoStack = []; $('undoBtn').disabled = true;
       speak(`Set recorded. ${tennisCall(set.a, set.b)}`, 'en-US', { rate: 0.95, pitch: 1 });
-
       update('a', 0, false);
       update('b', 0, false);
-      vib([40,40,40]);
+      vib([40, 40, 40]);
+      showToast(`Set saved  ${set.a} – ${set.b}`);
     });
 
+    // ── FULL RESET (long-press) ───────────────────────────────
     bindAction($('fullResetBtn'), () => {
-      if(state.hist.length > 0 || state.a > 0 || state.b > 0) {
-        const currentSets = [...state.hist];
-        if(state.a > 0 || state.b > 0) currentSets.push({a:state.a, b:state.b});
+      if (state.hist.length > 0 || state.a > 0 || state.b > 0) {
+        const sets = [...state.hist];
+        if (state.a > 0 || state.b > 0) sets.push({ a: state.a, b: state.b });
         state.archives.push({
           date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
-          nameA: state.nameA, nameB: state.nameB, sets: currentSets
+          nameA: state.nameA, nameB: state.nameB, sets,
         });
         store.set('scArch_v9', state.archives);
+        showToast('Saved to archive — open LOG to share');
       }
       state.a = 0; state.b = 0; state.hist = [];
       store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
-      render(); vib(200);
-      announceNow();
-      alert("Saved & Reset. Open LOG to share.");
+      undoStack = []; $('undoBtn').disabled = true;
+      render(); vib(200); announceNow();
     });
 
-    $('openLogBtn').onclick = () => { unlockSpeech(); renderArchives(); $('logOverlay').classList.add('active'); vib(10); };
-    $('closeLogBtn').onclick = () => { $('logOverlay').classList.remove('active'); vib(5); };
+    // ── UNDO ──────────────────────────────────────────────────
+    $('undoBtn').onclick = () => { unlockSpeech(); undoPoint(); };
+
+    // ── LOG ───────────────────────────────────────────────────
+    $('openLogBtn').onclick   = () => { unlockSpeech(); renderArchives(); $('logOverlay').classList.add('active'); vib(10); };
+    $('closeLogBtn').onclick  = () => { $('logOverlay').classList.remove('active'); vib(5); };
     $('clearArchiveBtn').onclick = () => {
-      if(confirm("Delete all archives?")) { state.archives = []; store.set('scArch_v9', []); renderArchives(); }
+      showConfirm('Delete all archives?', () => {
+        state.archives = []; store.set('scArch_v9', []); renderArchives();
+        showToast('All archives deleted.');
+      });
     };
 
+    // ── Card setup ────────────────────────────────────────────
     bindCard($('cardA'), 'a');
     bindCard($('cardB'), 'b');
 
-    (async()=>{try{if('wakeLock' in navigator) await navigator.wakeLock.request('screen');}catch{}})();
+    // ── Wake Lock (re-request on tab resume) ──────────────────
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+      try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }
+      catch {}
+    };
+    requestWakeLock();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
+
     render();
   </script>
 </body>
 </html>
-```
