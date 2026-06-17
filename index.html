@@ -327,6 +327,24 @@
     };
     let undoStack = [];
 
+    // ── Calendar 連携: RESET 時に当日のスコアを予約カレンダーへ自動記録 ──
+    const SCORE_SYNC_URL   = 'https://calendar-ecru-two.vercel.app/api/scores';   // 空なら同期しない
+    const SCORE_SYNC_TOKEN = '';   // Calendar 側 SCORE_API_TOKEN と一致させる（未設定なら空のまま）
+    const syncMatchToCalendar = (nameA, nameB, sets) => {
+      if (!SCORE_SYNC_URL || !sets.length) return;
+      const score = sets.map(s => `${s.a}-${s.b}`).join(' / ');
+      const headers = { 'Content-Type': 'application/json' };
+      if (SCORE_SYNC_TOKEN) headers['X-Score-Token'] = SCORE_SYNC_TOKEN;
+      fetch(SCORE_SYNC_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ player_a: nameA, player_b: nameB, score }),
+        keepalive: true,
+      })
+        .then(r => { if (r.ok) showToast('Calendarに記録しました'); })
+        .catch(() => {});
+    };
+
     // ── Toast ─────────────────────────────────────────────────
     let toastTimer = null;
     const showToast = (msg, ms = 2400) => {
@@ -617,6 +635,7 @@
         });
         store.set('scArch_v9', state.archives);
         showToast('Saved to archive — open LOG to share');
+        syncMatchToCalendar(state.nameA, state.nameB, sets);
       }
       state.a = 0; state.b = 0; state.hist = [];
       store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
