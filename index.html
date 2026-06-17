@@ -65,6 +65,8 @@
     .btn-act.next{ color: var(--accent); border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
     .btn-act.log{ color: var(--warning); border-color: var(--warning); background: rgba(255, 204, 0, 0.05); }
     .btn-act.undo{ color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.2); }
+    .btn-act.save{ color: #ffd166; border-color: #ffd166; background: rgba(255, 209, 102, 0.05); }
+    .btn-act.cal{ color: #39e58c; border-color: #39e58c; background: rgba(57, 229, 140, 0.05); }
     .btn-act.undo:disabled{ opacity: 0.3; cursor: default; transform: none; }
 
     /* Long-press progress bar */
@@ -252,6 +254,8 @@
         <button class="btn-act next" id="nextSetBtn">NEXT<span class="press-progress"></span></button>
         <button class="btn-act log"  id="openLogBtn">LOG</button>
         <button class="btn-act undo" id="undoBtn" disabled>UNDO</button>
+        <button class="btn-act save" id="saveLocalBtn" title="この端末のLOGにだけ記録（長押し）">端末記録<span class="press-progress"></span></button>
+        <button class="btn-act cal"  id="saveCalBtn" title="予約カレンダーに記録（長押し）">ｶﾚﾝﾀﾞｰ記録<span class="press-progress"></span></button>
         <button class="btn-act"      id="fullResetBtn">RESET<span class="press-progress"></span></button>
       </div>
     </div>
@@ -624,23 +628,47 @@
       showToast(`Set saved  ${set.a} – ${set.b}`);
     });
 
-    // ── FULL RESET (long-press) ───────────────────────────────
-    bindAction($('fullResetBtn'), () => {
-      if (state.hist.length > 0 || state.a > 0 || state.b > 0) {
-        const sets = [...state.hist];
-        if (state.a > 0 || state.b > 0) sets.push({ a: state.a, b: state.b });
-        state.archives.push({
-          date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
-          nameA: state.nameA, nameB: state.nameB, sets,
-        });
-        store.set('scArch_v9', state.archives);
-        showToast('Saved to archive — open LOG to share');
-        syncMatchToCalendar(state.nameA, state.nameB, sets);
-      }
+    // ── 記録ヘルパー ───────────────────────────────────────────
+    const collectSets = () => {
+      const sets = [...state.hist];
+      if (state.a > 0 || state.b > 0) sets.push({ a: state.a, b: state.b });
+      return sets;
+    };
+    const archiveMatch = (sets) => {
+      state.archives.push({
+        date: new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }),
+        nameA: state.nameA, nameB: state.nameB, sets,
+      });
+      store.set('scArch_v9', state.archives);
+    };
+    const clearBoard = () => {
       state.a = 0; state.b = 0; state.hist = [];
       store.set('scA_v9', 0); store.set('scB_v9', 0); store.set('scHist_v9', []);
       undoStack = []; $('undoBtn').disabled = true;
-      render(); vib(200); announceNow();
+      render(); announceNow();
+    };
+
+    // ── 端末記録 (long-press): この端末の LOG にだけ保存 ────────
+    bindAction($('saveLocalBtn'), () => {
+      const sets = collectSets();
+      if (!sets.length) { showToast('記録するスコアがありません'); return; }
+      archiveMatch(sets);
+      showToast('端末に保存しました（LOGで確認）');
+      clearBoard(); vib([40, 40, 40]);
+    });
+
+    // ── カレンダー記録 (long-press): 予約カレンダーへ送信 ───────
+    bindAction($('saveCalBtn'), () => {
+      const sets = collectSets();
+      if (!sets.length) { showToast('記録するスコアがありません'); return; }
+      archiveMatch(sets);
+      syncMatchToCalendar(state.nameA, state.nameB, sets);
+      clearBoard(); vib([40, 40, 40]);
+    });
+
+    // ── FULL RESET (long-press): 保存せず盤面をリセットするだけ ─
+    bindAction($('fullResetBtn'), () => {
+      clearBoard(); vib(200);
     });
 
     // ── UNDO ──────────────────────────────────────────────────
